@@ -1,0 +1,14 @@
+[phases.setup]
+nixPkgs = ["yt-dlp", "ffmpeg"]
+
+[phases.install]
+cmds = [
+  "npm install",
+  "cd backend && npm install"
+]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "node backend/server.js"
