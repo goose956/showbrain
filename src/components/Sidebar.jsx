@@ -75,30 +75,6 @@ export default function Sidebar({ active, onChange, isAdmin }) {
         <span className="text-th-tx1 font-bold text-sm tracking-tight">ShowBrain</span>
       </div>
 
-      {/* ── Pinned top links ─────────────────────────────────────── */}
-      <div className="px-2 pt-2 pb-1 flex flex-col gap-0.5 border-b border-th-sborder">
-        {[
-          { id: 'settings', label: 'Settings', icon: Settings, iconBg: 'bg-slate-500' },
-          ...(isAdmin ? [{ id: 'admin', label: 'Admin', icon: ShieldCheck, iconBg: 'bg-red-500' }] : []),
-        ].map(({ id, label, icon: Icon, iconBg }) => {
-          const isActive = active === id;
-          return (
-            <button
-              key={id}
-              onClick={() => onChange(id)}
-              className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-xs transition-all group ${
-                isActive ? 'bg-white/10 text-th-tx1' : 'text-th-tx3 hover:text-th-tx1 hover:bg-white/5'
-              }`}
-            >
-              <span className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${iconBg} ${isActive ? 'opacity-100' : 'opacity-55 group-hover:opacity-85'}`}>
-                <Icon size={11} className="text-white" />
-              </span>
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
       {/* ── Nav sections ─────────────────────────────────────────── */}
       <nav className="flex-1 px-2 pt-3 space-y-1.5 overflow-y-auto pb-3">
         {nav.map(({ section, color, borderColor, items }) => {
