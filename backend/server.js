@@ -428,6 +428,19 @@ cron.schedule('0 */6 * * *', async () => {
 
 // ── start ─────────────────────────────────────────────────────────────────────
 
+async function bootstrapAdmin() {
+  const username = process.env.ADMIN_USER || 'admin';
+  const password = process.env.ADMIN_PASSWORD;
+  if (!password) return;
+  const existing = await getMemberByUsername(username);
+  if (existing) return;
+  const id = randomUUID();
+  const passwordHash = await hashPassword(password);
+  await createMember({ id, username, passwordHash, role: 'admin' });
+  console.log(`[startup] Admin account created: ${username}`);
+}
+
 initSchema()
+  .then(bootstrapAdmin)
   .then(() => app.listen(PORT, () => console.log(`ShowBrain backend on http://localhost:${PORT}`)))
   .catch(err => { console.error('[startup] DB init failed:', err.message, err.code, 'DATABASE_URL set:', !!process.env.DATABASE_URL); process.exit(1); });
