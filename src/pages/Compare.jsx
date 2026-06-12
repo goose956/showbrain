@@ -93,6 +93,7 @@ function buildChannelStats(episodes, channels = []) {
 
   return Object.entries(byChannel).map(([channelId, { name, episodes: eps }], idx) => {
     const meta = channels.find(c => c.id === channelId) || {};
+    const isPrimary = meta.isPrimary || false;
     const withViews = eps.filter(e => e.viewCount > 0);
     const avgViews = avg(withViews.map(e => e.viewCount));
     const avgLikes = avg(withViews.map(e => e.likeCount || 0));
@@ -110,7 +111,7 @@ function buildChannelStats(episodes, channels = []) {
     const viewsPerSub = subs > 0 ? avgViews / subs : null;
 
     return {
-      channelId, name,
+      channelId, name, isPrimary,
       paletteIdx: idx % CHANNEL_PALETTE.length,
       episodeCount: eps.length,
       analysedCount: eps.filter(e => e.dimensions).length,
@@ -131,7 +132,7 @@ function buildChannelStats(episodes, channels = []) {
 
 // ── highlight cards ───────────────────────────────────────────────────────────
 
-function HighlightCard({ icon: Icon, iconColor, label, channelName, channelPalette, value, subvalue, tip }) {
+function HighlightCard({ icon: Icon, iconColor, label, channelName, channelPalette, isPrimary, value, subvalue, tip }) {
   return (
     <div className="bg-th-surface border border-th-border rounded-xl p-4 flex flex-col gap-3">
       <div className="flex items-center gap-2">
@@ -144,6 +145,9 @@ function HighlightCard({ icon: Icon, iconColor, label, channelName, channelPalet
         <div className="flex items-center gap-2 mb-0.5">
           <span className={`w-2 h-2 rounded-full shrink-0 ${channelPalette.bar}`} />
           <span className="text-th-tx1 text-sm font-semibold truncate">{channelName}</span>
+          {isPrimary && (
+            <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0">You</span>
+          )}
         </div>
         <p className={`text-base font-bold tabular-nums ${channelPalette.text}`}>{value}</p>
         {subvalue && <p className="text-th-tx4 text-[11px] mt-0.5">{subvalue}</p>}
@@ -460,6 +464,9 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
               <span key={ch.channelId} className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border ${pal.light}`}>
                 <span className={`w-2 h-2 rounded-full ${pal.bar}`} />
                 {ch.name}
+                {ch.isPrimary && (
+                  <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full">You</span>
+                )}
               </span>
             );
           })}
@@ -488,6 +495,7 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
                 label="Most views per episode"
                 channelName={topViews.name}
                 channelPalette={CHANNEL_PALETTE[topViews.paletteIdx]}
+                isPrimary={topViews.isPrimary}
                 value={fmt(topViews.avgViews)}
                 subvalue={`${fmt(topViews.subscriberCount)} subscribers`}
                 tip={topViews.topHook ? `Top hook: ${DIM_LABELS.hookType[topViews.topHook] || topViews.topHook}` : null}
@@ -499,6 +507,7 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
                 label="Fastest growing right now"
                 channelName={topGrowth.name}
                 channelPalette={CHANNEL_PALETTE[topGrowth.paletteIdx]}
+                isPrimary={topGrowth.isPrimary}
                 value={`${topGrowth.growthPct >= 0 ? '+' : ''}${topGrowth.growthPct.toFixed(0)}%`}
                 subvalue="recent 10 vs previous 10 episodes"
                 tip={topGrowth.topFormat ? `Format: ${DIM_LABELS.format[topGrowth.topFormat] || topGrowth.topFormat}` : null}
@@ -510,6 +519,7 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
                 label="Best views per subscriber"
                 channelName={topVps.name}
                 channelPalette={CHANNEL_PALETTE[topVps.paletteIdx]}
+                isPrimary={topVps.isPrimary}
                 value={`${topVps.viewsPerSub.toFixed(2)}x`}
                 subvalue="views per subscriber per episode"
                 tip="High ratio = content resonates beyond their existing audience"
@@ -521,6 +531,7 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
                 label="Small channel, big results"
                 channelName={overperformer.name}
                 channelPalette={CHANNEL_PALETTE[overperformer.paletteIdx]}
+                isPrimary={overperformer.isPrimary}
                 value={`${overperformer.viewsPerSub.toFixed(2)}x`}
                 subvalue={`only ${fmt(overperformer.subscriberCount)} subscribers`}
                 tip="Study this channel — their content formula works without a big audience"
@@ -531,6 +542,7 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
                 label="Most engaging audience"
                 channelName={topEngage.name}
                 channelPalette={CHANNEL_PALETTE[topEngage.paletteIdx]}
+                isPrimary={topEngage.isPrimary}
                 value={pct(topEngage.engagementRate)}
                 subvalue="likes + comments / views"
                 tip={topEngage.topContent ? `Content type: ${DIM_LABELS.contentType[topEngage.topContent] || topEngage.topContent}` : null}
@@ -569,7 +581,10 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full shrink-0 ${pal.bar}`} />
-                        <span className="text-th-tx1 text-xs font-medium truncate max-w-[160px]">{ch.name}</span>
+                        <span className="text-th-tx1 text-xs font-medium truncate max-w-[140px]">{ch.name}</span>
+                        {ch.isPrimary && (
+                          <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0">You</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{fmt(ch.subscriberCount)}</td>
