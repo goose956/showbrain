@@ -57,6 +57,35 @@ Return JSON only:
   return parseJson(response.content[0].text);
 }
 
+// Batch title analysis — cheap Haiku call, no transcript needed
+export async function analyseTitlesBatch(videos) {
+  const list = videos.map((v, i) => `${i}: ${v.title}`).join('\n');
+  const response = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 4096,
+    messages: [{
+      role: 'user',
+      content: `Classify each video title across these dimensions. Return a JSON array with one object per title, in the same order.
+
+Titles:
+${list}
+
+Return JSON array only:
+[
+  {
+    "hookType": "bold-claim|personal-story|controversial-question|surprising-statistic|cold-open|direct-challenge",
+    "contentType": "tactical|opinion|case-study|personal-story|trend-analysis|industry-news|myth-busting",
+    "topicCluster": "2-3 word cluster"
+  }
+]`,
+    }],
+  });
+  const text = response.content[0].text;
+  const match = text.match(/\[[\s\S]*\]/);
+  if (!match) throw new Error('No JSON array in response');
+  return JSON.parse(match[0]);
+}
+
 export async function generatePosts(episode, platforms) {
   const platformInstructions = {
     twitter: 'Twitter/X: max 280 chars, punchy, 1-2 hashtags',

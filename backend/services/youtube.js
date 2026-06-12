@@ -110,6 +110,24 @@ export async function getChannelVideos(channelId, { maxResults = 50 } = {}) {
   return videos.slice(0, maxResults);
 }
 
+// Fetch recent videos with stats for a channel (for compare-only channels)
+export async function getRecentVideosWithStats(channelId, limit = 50) {
+  const { videos } = await getChannelVideosPage(channelId, { pageSize: Math.min(limit, 50) });
+  if (!videos.length) return [];
+  const statsMap = await getVideoDurations(videos.map(v => v.videoId));
+  return videos.map(v => ({
+    videoId: v.videoId,
+    title: v.title,
+    publishedAt: v.publishedAt,
+    youtubeUrl: v.youtubeUrl,
+    thumbnail: v.thumbnail,
+    viewCount: statsMap[v.videoId]?.viewCount || 0,
+    likeCount: statsMap[v.videoId]?.likeCount || 0,
+    commentCount: statsMap[v.videoId]?.commentCount || 0,
+    duration: statsMap[v.videoId]?.duration || 0,
+  }));
+}
+
 // Get video durations + public stats for a list of video IDs
 export async function getVideoDurations(videoIds) {
   if (!videoIds.length) return {};

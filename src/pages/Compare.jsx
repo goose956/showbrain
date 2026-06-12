@@ -269,7 +269,7 @@ function AddChannelForm({ onAdded, onCancel }) {
     setError('');
     setAdding(true);
     try {
-      const res = await apiFetch('/api/channels', {
+      const res = await apiFetch('/api/channels/compare-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: url.trim() }),
@@ -301,15 +301,113 @@ function AddChannelForm({ onAdded, onCancel }) {
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-th-accent hover:bg-th-accentH disabled:opacity-40 disabled:cursor-not-allowed text-th-accentFg text-xs font-medium transition-colors"
       >
         {adding ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
-        {adding ? 'Adding…' : 'Add'}
+        {adding ? 'Importing…' : 'Add'}
       </button>
       {onCancel && (
         <button type="button" onClick={onCancel} className="text-th-tx4 hover:text-th-tx2 transition-colors">
           <X size={14} />
         </button>
       )}
+      {adding && (
+        <span className="text-th-tx4 text-xs">Fetching all videos + analysing titles…</span>
+      )}
       {error && <p className="text-red-400 text-xs">{error}</p>}
     </form>
+  );
+}
+
+// ── views over time chart ─────────────────────────────────────────────────────
+
+function ViewsOverTimeChart({ channelStats }) {
+  const W = 900, H = 280, PAD = { top: 16, right: 24, bottom: 40, left: 56 };
+  const innerW = W - PAD.left - PAD.right;
+  const innerH = H - PAD.top - PAD.bottom;
+
+  // Build per-channel time series — rolling 5-ep average to smooth spikes
+  const series = channelStats.map(ch => {
+    const pts = [...ch.episodes]
+      .filter(e => e.publishedAt && e.viewCount > 0)
+      .sort((a, b) => new Date(a.publishedAt) - new Date(b.publishedAt));
+    if (pts.length < 3) return null;
+
+    // Rolling average
+    const smoothed = pts.map((p, i) => {
+      const window = pts.slice(Math.max(0, i - 2), i + 3);
+      const avgViews = window.reduce((s, w) => s + w.viewCount, 0) / window.length;
+      return { date: new Date(p.publishedAt), views: avgViews };
+    });
+
+    return { channelId: ch.channelId, name: ch.name, paletteIdx: ch.paletteIdx, pts: smoothed };
+  }).filter(Boolean);
+
+  if (!series.length) return null;
+
+  const allDates = series.flatMap(s => s.pts.map(p => p.date));
+  const allViews = series.flatMap(s => s.pts.map(p => p.views));
+  const minDate = new Date(Math.min(...allDates));
+  const maxDate = new Date(Math.max(...allDates));
+  const maxViews = Math.max(...allViews);
+  const dateRange = maxDate - minDate || 1;
+
+  const x = (date) => ((date - minDate) / dateRange) * innerW;
+  const y = (views) => innerH - (views / maxViews) * innerH;
+
+  const BAR_COLORS = ['#8b5cf6', '#38bdf8', '#34d399', '#fbbf24', '#f472b6'];
+
+  // Y axis ticks
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map(t => ({
+    v: maxViews * t,
+    y: innerH - t * innerH,
+  }));
+
+  // X axis ticks — ~5 evenly spaced years/dates
+  const xTicks = Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(minDate.getTime() + (dateRange * i) / 4);
+    return { d, x: x(d) };
+  });
+
+  function fmtViews(n) {
+    if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+    if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
+    return Math.round(n);
+  }
+
+  function fmtDate(d) {
+    return d.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minWidth: 480 }}>
+        <g transform={`translate(${PAD.left},${PAD.top})`}>
+          {/* Grid lines */}
+          {yTicks.map((t, i) => (
+            <g key={i}>
+              <line x1={0} y1={t.y} x2={innerW} y2={t.y} stroke="currentColor" strokeOpacity={0.08} strokeWidth={1} />
+              <text x={-8} y={t.y + 4} textAnchor="end" fontSize={10} fill="currentColor" fillOpacity={0.4}>
+                {fmtViews(t.v)}
+              </text>
+            </g>
+          ))}
+
+          {/* X axis ticks */}
+          {xTicks.map((t, i) => (
+            <text key={i} x={t.x} y={innerH + 20} textAnchor="middle" fontSize={10} fill="currentColor" fillOpacity={0.4}>
+              {fmtDate(t.d)}
+            </text>
+          ))}
+
+          {/* Lines */}
+          {series.map(s => {
+            const color = BAR_COLORS[s.paletteIdx] || BAR_COLORS[0];
+            const d = s.pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.date).toFixed(1)},${y(p.views).toFixed(1)}`).join(' ');
+            return (
+              <path key={s.channelId} d={d} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" opacity={0.9} />
+            );
+          })}
+        </g>
+      </svg>
+    </div>
   );
 }
 
@@ -548,6 +646,31 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
             )}
           </div>
         </div>
+
+        {/* ── Views over time ── */}
+        {channelStats.some(ch => ch.episodes.some(e => e.viewCount > 0 && e.publishedAt)) && (
+          <div className="px-6 pt-6 pb-2">
+            <p className="text-th-tx3 text-xs font-medium uppercase tracking-wider mb-3">Views over time</p>
+            <div className="bg-th-surface border border-th-border rounded-xl p-4">
+              {/* Legend */}
+              <div className="flex flex-wrap gap-3 mb-4">
+                {channelStats.map(ch => {
+                  const BAR_COLORS = ['#8b5cf6', '#38bdf8', '#34d399', '#fbbf24', '#f472b6'];
+                  const color = BAR_COLORS[ch.paletteIdx] || BAR_COLORS[0];
+                  return (
+                    <span key={ch.channelId} className="flex items-center gap-1.5 text-xs text-th-tx3">
+                      <span className="w-3 h-0.5 rounded-full inline-block" style={{ backgroundColor: color }} />
+                      {ch.name}
+                      {ch.isPrimary && <span className="text-[10px] font-semibold text-amber-300">(You)</span>}
+                    </span>
+                  );
+                })}
+              </div>
+              <ViewsOverTimeChart channelStats={channelStats} />
+              <p className="text-th-tx4 text-[11px] mt-2">Rolling average of view counts per episode. Shows momentum trends over channel lifetime.</p>
+            </div>
+          </div>
+        )}
 
         {/* ── Stats table ── */}
         <div className="px-6 pt-6 pb-2">

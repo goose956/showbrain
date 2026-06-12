@@ -8,6 +8,7 @@ import { randomUUID } from 'crypto';
 
 import { initSchema } from './services/db.js';
 import { resolveChannelId, getChannelInfo, getChannelVideosPage, getAllChannelVideos, getVideoDurations } from './services/youtube.js';
+import { analyseTitlesBatch } from './services/analyse.js';
 import { syncChannel, getSyncState } from './services/sync.js';
 import { getChannels, getChannel, upsertChannel, deleteChannel, getEpisodes, getEpisodeByVideoId, getClicks, logClick, addWaitlistEmail, upsertEpisode, getMembers, getMemberById, getMemberByUsername, createMember, deleteMember, getUserSettings, setUserSettings, getPosts, savePost, updatePostStatus, deletePost, getIdeas, saveIdeas, deleteIdeas, getScripts, saveScript, deleteScript } from './services/store.js';
 import { generatePosts } from './services/analyse.js';
@@ -155,6 +156,73 @@ app.post('/api/channels', async (req, res) => {
     const channel = { ...info, addedAt: new Date().toISOString(), lastSyncedAt: null };
     await upsertChannel(req.userId, channel);
     res.json({ channel });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Compare-only import — fetches all video stats + title analysis, no transcription
+app.post('/api/channels/compare-import', async (req, res) => {
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ error: 'url is required' });
+  try {
+    const channelId = await resolveChannelId(url);
+    if (await getChannel(req.userId, channelId)) return res.status(409).json({ error: 'Channel already added' });
+
+    // 1. Channel metadata
+    const info = await getChannelInfo(channelId);
+
+    // 2. All videos
+    const videos = await getAllChannelVideos(channelId);
+
+    // 3. Stats for all videos in batches
+    const statsMap = await getVideoDurations(videos.map(v => v.videoId));
+
+    // 4. Batch title analysis
+    let titleDimensions = [];
+    try {
+      titleDimensions = await analyseTitlesBatch(videos);
+    } catch {}
+
+    // 5. Save channel
+    const channel = {
+      ...info,
+      compareOnly: true,
+      addedAt: new Date().toISOString(),
+      lastSyncedAt: new Date().toISOString(),
+    };
+    await upsertChannel(req.userId, channel);
+
+    // 6. Save episodes (stats only, no transcript)
+    for (let i = 0; i < videos.length; i++) {
+      const v = videos[i];
+      const stats = statsMap[v.videoId] || {};
+      const dims = titleDimensions[i] || null;
+      await upsertEpisode(req.userId, {
+        id: `${req.userId}-${v.videoId}`,
+        channelId,
+        channelName: info.name,
+        videoId: v.videoId,
+        title: v.title,
+        show: info.name,
+        publishedAt: v.publishedAt ? v.publishedAt.split('T')[0] : null,
+        youtubeUrl: v.youtubeUrl,
+        thumbnail: v.thumbnail,
+        duration: stats.duration || null,
+        viewCount: stats.viewCount || 0,
+        likeCount: stats.likeCount || 0,
+        commentCount: stats.commentCount || 0,
+        transcript: null,
+        transcriptStatus: 'compare_only',
+        dimensions: dims ? {
+          hookType: dims.hookType,
+          contentType: dims.contentType,
+          topicCluster: dims.topicCluster,
+        } : null,
+      });
+    }
+
+    res.json({ channel, videoCount: videos.length });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

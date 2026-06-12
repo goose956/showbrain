@@ -13,6 +13,7 @@ function rowToChannel(r) {
     videoCount: Number(r.video_count) || 0,
     description: r.description || null,
     channelCreatedAt: r.channel_created_at || null,
+    compareOnly: r.compare_only || false,
     isPrimary: r.is_primary || false,
     addedAt: r.added_at,
     lastSyncedAt: r.last_synced_at,
@@ -77,8 +78,8 @@ export async function getChannel(userId, channelId) {
 
 export async function upsertChannel(userId, channel) {
   await query(`
-    INSERT INTO channels (id, user_id, name, thumbnail, subscriber_count, total_view_count, video_count, description, channel_created_at, is_primary, added_at, last_synced_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+    INSERT INTO channels (id, user_id, name, thumbnail, subscriber_count, total_view_count, video_count, description, channel_created_at, compare_only, is_primary, added_at, last_synced_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
     ON CONFLICT (id, user_id) DO UPDATE SET
       name               = EXCLUDED.name,
       thumbnail          = EXCLUDED.thumbnail,
@@ -87,6 +88,7 @@ export async function upsertChannel(userId, channel) {
       video_count        = EXCLUDED.video_count,
       description        = EXCLUDED.description,
       channel_created_at = EXCLUDED.channel_created_at,
+      compare_only       = EXCLUDED.compare_only,
       is_primary         = EXCLUDED.is_primary,
       added_at           = EXCLUDED.added_at,
       last_synced_at     = EXCLUDED.last_synced_at
@@ -99,6 +101,7 @@ export async function upsertChannel(userId, channel) {
     channel.videoCount || 0,
     channel.description || null,
     channel.channelCreatedAt || null,
+    channel.compareOnly || false,
     channel.isPrimary || false,
     channel.addedAt || new Date().toISOString(),
     channel.lastSyncedAt || null,

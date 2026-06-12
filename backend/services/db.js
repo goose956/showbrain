@@ -35,6 +35,7 @@ export async function initSchema() {
       video_count       INT DEFAULT 0,
       description       TEXT,
       channel_created_at TIMESTAMPTZ,
+      compare_only      BOOLEAN DEFAULT FALSE,
       is_primary        BOOLEAN DEFAULT FALSE,
       added_at          TIMESTAMPTZ,
       last_synced_at    TIMESTAMPTZ,
@@ -70,6 +71,7 @@ export async function initSchema() {
     ALTER TABLE episodes ADD COLUMN IF NOT EXISTS transcript_status TEXT DEFAULT 'ok';
     ALTER TABLE channels ADD COLUMN IF NOT EXISTS total_view_count BIGINT DEFAULT 0;
     ALTER TABLE channels ADD COLUMN IF NOT EXISTS channel_created_at TIMESTAMPTZ;
+    ALTER TABLE channels ADD COLUMN IF NOT EXISTS compare_only BOOLEAN DEFAULT FALSE;
 
     CREATE INDEX IF NOT EXISTS episodes_user_channel ON episodes (user_id, channel_id);
     CREATE INDEX IF NOT EXISTS episodes_video_id     ON episodes (user_id, video_id);
