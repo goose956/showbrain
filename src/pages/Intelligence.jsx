@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2, Sparkles, ChevronUp, ChevronDown, ChevronsUpDown, AlertCircle, CheckCircle2, XCircle, TrendingUp, Zap } from 'lucide-react';
 import { analyzeEpisodeDimensions, generateChannelInsights, fetchSavedInsights, persistInsights } from '../lib/claude';
 
