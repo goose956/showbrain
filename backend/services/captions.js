@@ -1,14 +1,27 @@
-import { YoutubeTranscript } from 'youtube-transcript';
 import OpenAI from 'openai';
 
-function getClient() {
+const SUPADATA_API_KEY = process.env.SUPADATA_API_KEY;
+
+function getOpenAI() {
   if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not set');
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 }
 
 export async function fetchCaptions(videoId) {
-  const segments = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
+  if (!SUPADATA_API_KEY) throw new Error('SUPADATA_API_KEY is not set');
 
+  const res = await fetch(
+    `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&lang=en`,
+    { headers: { 'x-api-key': SUPADATA_API_KEY } }
+  );
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Supadata error (${res.status}): ${err}`);
+  }
+
+  const data = await res.json();
+  const segments = data?.content;
   if (!segments?.length) throw new Error('No transcript segments returned');
 
   const raw = segments
@@ -22,7 +35,7 @@ export async function fetchCaptions(videoId) {
 }
 
 export async function cleanupCaptions(rawText, title) {
-  const response = await getClient().chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: 'gpt-4o-mini',
     max_tokens: 8192,
     messages: [
