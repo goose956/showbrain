@@ -59,10 +59,13 @@ export async function initSchema() {
       view_count    INT DEFAULT 0,
       like_count    INT DEFAULT 0,
       comment_count INT DEFAULT 0,
-      stats_only    BOOLEAN DEFAULT FALSE,
-      synced_at     TIMESTAMPTZ,
+      stats_only        BOOLEAN DEFAULT FALSE,
+      transcript_status TEXT DEFAULT 'ok',
+      synced_at         TIMESTAMPTZ,
       PRIMARY KEY (id, user_id)
     );
+
+    ALTER TABLE episodes ADD COLUMN IF NOT EXISTS transcript_status TEXT DEFAULT 'ok';
 
     CREATE INDEX IF NOT EXISTS episodes_user_channel ON episodes (user_id, channel_id);
     CREATE INDEX IF NOT EXISTS episodes_video_id     ON episodes (user_id, video_id);

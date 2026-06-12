@@ -39,6 +39,7 @@ function rowToEpisode(r) {
     likeCount: r.like_count || 0,
     commentCount: r.comment_count || 0,
     statsOnly: r.stats_only || false,
+    transcriptStatus: r.transcript_status || 'ok',
     syncedAt: r.synced_at,
   };
 }
@@ -127,27 +128,28 @@ export async function upsertEpisode(userId, episode) {
       id, user_id, channel_id, channel_name, video_id, title, show,
       published_at, duration, youtube_url, thumbnail,
       transcript, summary, topics, sentiment, dimensions,
-      view_count, like_count, comment_count, stats_only, synced_at
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+      view_count, like_count, comment_count, stats_only, transcript_status, synced_at
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
     ON CONFLICT (id, user_id) DO UPDATE SET
-      channel_id    = EXCLUDED.channel_id,
-      channel_name  = EXCLUDED.channel_name,
-      title         = EXCLUDED.title,
-      show          = EXCLUDED.show,
-      published_at  = COALESCE(EXCLUDED.published_at, episodes.published_at),
-      duration      = COALESCE(NULLIF(EXCLUDED.duration, 0), episodes.duration),
-      youtube_url   = COALESCE(EXCLUDED.youtube_url, episodes.youtube_url),
-      thumbnail     = COALESCE(EXCLUDED.thumbnail, episodes.thumbnail),
-      transcript    = COALESCE(EXCLUDED.transcript, episodes.transcript),
-      summary       = COALESCE(EXCLUDED.summary, episodes.summary),
-      topics        = CASE WHEN jsonb_array_length(EXCLUDED.topics) > 0 THEN EXCLUDED.topics ELSE episodes.topics END,
-      sentiment     = COALESCE(EXCLUDED.sentiment, episodes.sentiment),
-      dimensions    = COALESCE(EXCLUDED.dimensions, episodes.dimensions),
-      view_count    = COALESCE(NULLIF(EXCLUDED.view_count, 0), episodes.view_count),
-      like_count    = COALESCE(NULLIF(EXCLUDED.like_count, 0), episodes.like_count),
-      comment_count = COALESCE(NULLIF(EXCLUDED.comment_count, 0), episodes.comment_count),
-      stats_only    = EXCLUDED.stats_only,
-      synced_at     = COALESCE(EXCLUDED.synced_at, episodes.synced_at)
+      channel_id        = EXCLUDED.channel_id,
+      channel_name      = EXCLUDED.channel_name,
+      title             = EXCLUDED.title,
+      show              = EXCLUDED.show,
+      published_at      = COALESCE(EXCLUDED.published_at, episodes.published_at),
+      duration          = COALESCE(NULLIF(EXCLUDED.duration, 0), episodes.duration),
+      youtube_url       = COALESCE(EXCLUDED.youtube_url, episodes.youtube_url),
+      thumbnail         = COALESCE(EXCLUDED.thumbnail, episodes.thumbnail),
+      transcript        = COALESCE(EXCLUDED.transcript, episodes.transcript),
+      summary           = COALESCE(EXCLUDED.summary, episodes.summary),
+      topics            = CASE WHEN jsonb_array_length(EXCLUDED.topics) > 0 THEN EXCLUDED.topics ELSE episodes.topics END,
+      sentiment         = COALESCE(EXCLUDED.sentiment, episodes.sentiment),
+      dimensions        = COALESCE(EXCLUDED.dimensions, episodes.dimensions),
+      view_count        = COALESCE(NULLIF(EXCLUDED.view_count, 0), episodes.view_count),
+      like_count        = COALESCE(NULLIF(EXCLUDED.like_count, 0), episodes.like_count),
+      comment_count     = COALESCE(NULLIF(EXCLUDED.comment_count, 0), episodes.comment_count),
+      stats_only        = EXCLUDED.stats_only,
+      transcript_status = EXCLUDED.transcript_status,
+      synced_at         = COALESCE(EXCLUDED.synced_at, episodes.synced_at)
   `, [
     episode.id, userId,
     episode.channelId || null,
@@ -168,6 +170,7 @@ export async function upsertEpisode(userId, episode) {
     episode.likeCount || 0,
     episode.commentCount || 0,
     episode.statsOnly || false,
+    episode.transcriptStatus || 'ok',
     episode.syncedAt || null,
   ]);
   return episode;

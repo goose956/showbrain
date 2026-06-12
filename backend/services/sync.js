@@ -50,16 +50,17 @@ async function processVideo(userId, video, channelId, channelName) {
     let transcript;
 
     // Fetch YouTube captions and clean up with Claude
+    let transcriptStatus = 'ok';
     console.log(`[sync:${userId}] Fetching captions for: ${video.videoId}`);
-    const raw = await fetchCaptions(video.videoId);
-    console.log(`[sync:${userId}] Cleaning up captions with Claude`);
-    transcript = await cleanupCaptions(raw, video.title);
-    console.log(`[sync:${userId}] Captions ready (${transcript.length} chars)`);
-
-    const [analysis, dimensions] = await Promise.all([
-      analyseEpisode(transcript, video.title),
-      analyseDimensions(transcript, video.title),
-    ]);
+    try {
+      const raw = await fetchCaptions(video.videoId);
+      console.log(`[sync:${userId}] Cleaning up captions with Claude`);
+      transcript = await cleanupCaptions(raw, video.title);
+      console.log(`[sync:${userId}] Captions ready (${transcript.length} chars)`);
+    } catch (captionErr) {
+      console.warn(`[sync:${userId}] No captions for "${video.title}": ${captionErr.message}`);
+      transcriptStatus = 'no_captions';
+    }
 
     const episode = {
       id: `yt-${video.videoId}`,
@@ -72,16 +73,39 @@ async function processVideo(userId, video, channelId, channelName) {
       duration: video.duration || 0,
       youtubeUrl: video.youtubeUrl,
       thumbnail: video.thumbnail,
+      transcript: transcript || null,
+      summary: null,
+      topics: [],
+      sentiment: null,
+      dimensions: null,
+      viewCount: video.viewCount || 0,
+      likeCount: video.likeCount || 0,
+      commentCount: video.commentCount || 0,
+      transcriptStatus,
+      syncedAt: new Date().toISOString(),
+    };
+
+    if (transcriptStatus === 'no_captions') {
+      await upsertEpisode(userId, episode);
+      state.processed++;
+      state.progress = Math.round((state.processed / state.total) * 100);
+      return episode;
+    }
+
+    const [analysis, dimensions] = await Promise.all([
+      analyseEpisode(transcript, video.title),
+      analyseDimensions(transcript, video.title),
+    ]);
+
+    Object.assign(episode, {
       transcript,
       summary: analysis.summary,
       topics: analysis.topics,
       sentiment: analysis.sentiment,
       dimensions,
-      viewCount: video.viewCount || 0,
-      likeCount: video.likeCount || 0,
-      commentCount: video.commentCount || 0,
+      transcriptStatus: 'ok',
       syncedAt: new Date().toISOString(),
-    };
+    });
 
     await upsertEpisode(userId, episode);
 

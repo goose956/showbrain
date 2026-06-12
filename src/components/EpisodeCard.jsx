@@ -1,4 +1,4 @@
-import { Clock, Headphones, Share2, Tag } from 'lucide-react';
+import { Clock, Headphones, Share2, Tag, CaptionsOff } from 'lucide-react';
 
 const sentimentColors = {
   positive: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -33,9 +33,16 @@ export default function EpisodeCard({ episode, onClick }) {
             {episode.title}
           </h3>
         </div>
-        <span className={`shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full border ${sentimentColors[episode.sentiment] || sentimentColors.neutral}`}>
-          {episode.sentiment}
-        </span>
+        {episode.transcriptStatus === 'no_captions' ? (
+          <span className="shrink-0 flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/20">
+            <CaptionsOff size={10} />
+            No captions
+          </span>
+        ) : (
+          <span className={`shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full border ${sentimentColors[episode.sentiment] || sentimentColors.neutral}`}>
+            {episode.sentiment}
+          </span>
+        )}
       </div>
 
       <p className="text-th-tx2 text-xs leading-relaxed mb-4 line-clamp-2">
