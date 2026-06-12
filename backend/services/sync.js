@@ -4,7 +4,7 @@ import { transcribeFile } from './transcribe.js';
 import { analyseEpisode, analyseDimensions } from './analyse.js';
 import { getChannel, upsertChannel, upsertEpisode, getEpisodeByVideoId } from './store.js';
 
-// Per-user sync state — each user gets their own slot so concurrent syncs work
+// Per-user sync state — in-memory, survives navigation but not server restarts
 const EMPTY_STATE = () => ({
   running: false,
   userId: null,
@@ -20,14 +20,13 @@ const EMPTY_STATE = () => ({
   lastSyncedAt: null,
 });
 
-const syncStates = new Map(); // userId → state
+const syncStates = new Map();
 
 export function getSyncState(userId) {
   if (!syncStates.has(userId)) syncStates.set(userId, EMPTY_STATE());
   return syncStates.get(userId);
 }
 
-// Legacy single-export kept so existing imports don't break (points at a dummy)
 export const syncState = EMPTY_STATE();
 
 async function processVideo(userId, video, channelId, channelName) {
@@ -35,7 +34,7 @@ async function processVideo(userId, video, channelId, channelName) {
   console.log(`[sync:${userId}] Processing: ${video.title}`);
   state.currentVideo = video.title;
 
-  const existing = getEpisodeByVideoId(userId, video.videoId, channelId);
+  const existing = await getEpisodeByVideoId(userId, video.videoId, channelId);
   if (existing?.transcript && existing?.summary) {
     console.log(`[sync:${userId}] Skipping (already done): ${video.title}`);
     state.processed++;
@@ -74,7 +73,7 @@ async function processVideo(userId, video, channelId, channelName) {
       syncedAt: new Date().toISOString(),
     };
 
-    upsertEpisode(userId, episode);
+    await upsertEpisode(userId, episode);
     state.processed++;
     state.progress = Math.round((state.processed / state.total) * 100);
     return episode;
@@ -87,7 +86,7 @@ export async function syncChannel({ userId, channelId, videoIds, maxVideos = 20,
   const state = getSyncState(userId);
   if (state.running) throw new Error('Sync already in progress for this user');
 
-  const channel = getChannel(userId, channelId);
+  const channel = await getChannel(userId, channelId);
   if (!channel?.id) throw new Error('Channel not found');
 
   Object.assign(state, {
@@ -127,7 +126,6 @@ export async function syncChannel({ userId, channelId, videoIds, maxVideos = 20,
       for (const video of batch) {
         try {
           await processVideo(userId, video, channelId, channel.name);
-          // processVideo updates state.processed and state.progress via closure below
         } catch (err) {
           console.error(`[sync:${userId}] Error on "${video.title}":`, err.message);
           state.errors.push({ videoId: video.videoId, title: video.title, error: err.message });
@@ -139,7 +137,7 @@ export async function syncChannel({ userId, channelId, videoIds, maxVideos = 20,
     }
 
     const lastSyncedAt = new Date().toISOString();
-    upsertChannel(userId, { ...channel, lastSyncedAt });
+    await upsertChannel(userId, { ...channel, lastSyncedAt });
     state.lastSyncedAt = lastSyncedAt;
     console.log(`[sync:${userId}] Done. ${state.processed} processed, ${state.errors.length} errors.`);
   } finally {
