@@ -320,7 +320,7 @@ function AddChannelForm({ onAdded, onCancel }) {
 
 const CHART_COLORS = ['#8b5cf6', '#38bdf8', '#34d399', '#fbbf24', '#f472b6'];
 
-function ChannelGrowthChart({ ch }) {
+function ChannelGrowthChart({ ch, sharedMaxViews }) {
   const W = 320, H = 120, PAD = { top: 8, right: 12, bottom: 28, left: 44 };
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
@@ -336,7 +336,6 @@ function ChannelGrowthChart({ ch }) {
     <div className="flex items-center justify-center h-20 text-th-tx4 text-xs">Not enough data</div>
   );
 
-  // Rolling 5-ep average, X = months since channel launch (or since first video)
   const firstMs = launchMs || new Date(pts[0].publishedAt).getTime();
   const smoothed = pts.map((p, i) => {
     const win = pts.slice(Math.max(0, i - 2), i + 3);
@@ -346,10 +345,11 @@ function ChannelGrowthChart({ ch }) {
   });
 
   const maxMonths = smoothed[smoothed.length - 1].months || 1;
-  const maxViews = Math.max(...smoothed.map(p => p.views));
+  // Use shared Y scale so channels are visually comparable
+  const maxViews = sharedMaxViews || Math.max(...smoothed.map(p => p.views));
 
   const x = (m) => (m / maxMonths) * innerW;
-  const y = (v) => innerH - (v / maxViews) * innerH;
+  const y = (v) => innerH - Math.min(v / maxViews, 1) * innerH;
 
   function fmtV(n) {
     if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -358,13 +358,10 @@ function ChannelGrowthChart({ ch }) {
   }
 
   const yTicks = [0, 0.5, 1].map(t => ({ v: maxViews * t, y: innerH - t * innerH }));
-  const xTicks = [0, 0.5, 1].map(t => ({ m: maxMonths * t, x: (maxMonths * t / maxMonths) * innerW }));
+  const xTicks = [0, 0.5, 1].map(t => ({ m: maxMonths * t, x: t * innerW }));
 
   const d = smoothed.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.months).toFixed(1)},${y(p.views).toFixed(1)}`).join(' ');
-
-  // Area fill path
   const area = `${d} L${x(smoothed[smoothed.length - 1].months).toFixed(1)},${innerH} L${x(0)},${innerH} Z`;
-
   const gradId = `grad-${ch.channelId.replace(/[^a-z0-9]/gi, '')}`;
 
   return (
@@ -400,6 +397,17 @@ function GrowthChartGrid({ channelStats }) {
   );
   if (!eligible.length) return null;
 
+  // Compute shared Y axis max across all channels so scales are comparable
+  const sharedMaxViews = Math.max(...eligible.map(ch => {
+    const pts = ch.episodes.filter(e => e.viewCount > 0 && e.publishedAt)
+      .sort((a, b) => new Date(a.publishedAt) - new Date(b.publishedAt));
+    const smoothed = pts.map((p, i) => {
+      const win = pts.slice(Math.max(0, i - 2), i + 3);
+      return win.reduce((s, w) => s + w.viewCount, 0) / win.length;
+    });
+    return Math.max(...smoothed);
+  }));
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       {eligible.map(ch => {
@@ -423,8 +431,8 @@ function GrowthChartGrid({ channelStats }) {
                 </span>
               )}
             </div>
-            <ChannelGrowthChart ch={ch} />
-            <p className="text-th-tx4 text-[10px] mt-1">Months since launch · rolling avg views</p>
+            <ChannelGrowthChart ch={ch} sharedMaxViews={sharedMaxViews} />
+            <p className="text-th-tx4 text-[10px] mt-1">Months since launch · shared scale · rolling avg views</p>
           </div>
         );
       })}
