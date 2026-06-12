@@ -175,7 +175,11 @@ export default function App() {
       case 'search':       return <SemanticSearch episodes={episodes} />;
       case 'performance':  return <Performance episodes={episodes} />;
       case 'intelligence': return <Intelligence episodes={episodes} onEpisodesUpdate={setEpisodes} />;
-      case 'compare':      return <Compare episodes={episodes} />;
+      case 'compare':      return <Compare episodes={episodes} onChannelsLoaded={() => {
+        apiFetch('/api/channels').then(r => r.json()).then(chs =>
+          setChannels(chs.map(ch => ({ ...ch, transcribedCount: episodes.filter(e => e.channelId === ch.id && e.transcript).length })))
+        ).catch(() => {});
+      }} />;
       case 'ideas':        return <Ideas episodes={episodes} onWriteScript={handleWriteScript} />;
       case 'scriptwriter': return <ScriptWriter key={scriptBrief} episodes={episodes} initialBrief={scriptBrief} />;
       case 'queue':        return <PostQueue episodes={episodes} />;

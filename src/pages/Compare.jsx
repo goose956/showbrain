@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import {
   GitCompare, Sparkles, Loader2, AlertCircle, ChevronUp, ChevronDown,
-  ChevronsUpDown, TrendingUp, Zap, Target,
+  ChevronsUpDown, TrendingUp, Zap, Target, Plus, X,
 } from 'lucide-react';
 import { generateCrossChannelInsights } from '../lib/claude';
+import { apiFetch } from '../lib/api';
 
 // ── constants ─────────────────────────────────────────────────────────────────
 
@@ -247,6 +248,63 @@ function InsightsPanel({ insights }) {
   );
 }
 
+// ── add channel form ──────────────────────────────────────────────────────────
+
+function AddChannelForm({ onAdded, onCancel }) {
+  const [url, setUrl] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!url.trim()) return;
+    setError('');
+    setAdding(true);
+    try {
+      const res = await apiFetch('/api/channels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setUrl('');
+      onAdded(data.channel);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleAdd} className="flex items-center gap-2">
+      <input
+        type="text"
+        value={url}
+        onChange={e => { setUrl(e.target.value); setError(''); }}
+        placeholder="YouTube channel URL or @handle"
+        autoFocus
+        className="bg-th-raised border border-th-border rounded-lg px-3 py-1.5 text-th-tx1 text-xs placeholder-th-tx4 focus:outline-none focus:border-th-accent transition-colors w-72"
+      />
+      <button
+        type="submit"
+        disabled={adding || !url.trim()}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-th-accent hover:bg-th-accentH disabled:opacity-40 disabled:cursor-not-allowed text-th-accentFg text-xs font-medium transition-colors"
+      >
+        {adding ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
+        {adding ? 'Adding…' : 'Add'}
+      </button>
+      {onCancel && (
+        <button type="button" onClick={onCancel} className="text-th-tx4 hover:text-th-tx2 transition-colors">
+          <X size={14} />
+        </button>
+      )}
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+    </form>
+  );
+}
+
 // ── main page ─────────────────────────────────────────────────────────────────
 
 const TABLE_COLS = [
@@ -262,14 +320,20 @@ const TABLE_COLS = [
   { key: 'topContent',     label: 'Top Content',sortable: false },
 ];
 
-export default function Compare({ episodes }) {
+export default function Compare({ episodes, onChannelsLoaded }) {
   const [sortCol, setSortCol] = useState('avgViews');
   const [sortDir, setSortDir] = useState('desc');
   const [insights, setInsights] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [insightError, setInsightError] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const channelStats = useMemo(() => buildChannelStats(episodes), [episodes]);
+
+  const handleChannelAdded = (channel) => {
+    setShowAddForm(false);
+    onChannelsLoaded?.();
+  };
 
   const sorted = useMemo(() => {
     return [...channelStats].sort((a, b) => {
@@ -328,9 +392,19 @@ export default function Compare({ episodes }) {
       <div className="flex flex-col items-center justify-center h-full text-center px-4">
         <GitCompare size={36} className="text-th-raised mb-4" />
         <p className="text-th-tx2 text-sm font-medium mb-2">Add at least 2 channels to compare</p>
-        <p className="text-th-tx4 text-xs max-w-xs leading-relaxed">
-          Go to the Channels page and add your channel plus competitors or channels in your niche.
+        <p className="text-th-tx4 text-xs max-w-xs leading-relaxed mb-6">
+          Add your channel plus competitors or channels in your niche.
         </p>
+        {showAddForm ? (
+          <AddChannelForm onAdded={handleChannelAdded} onCancel={() => setShowAddForm(false)} />
+        ) : (
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-th-accent hover:bg-th-accentH text-th-accentFg text-sm font-medium transition-colors"
+          >
+            <Plus size={14} /> Add channel
+          </button>
+        )}
       </div>
     );
   }
@@ -360,8 +434,8 @@ export default function Compare({ episodes }) {
           </button>
         </div>
 
-        {/* Channel legend */}
-        <div className="flex flex-wrap gap-2 mt-3">
+        {/* Channel legend + add */}
+        <div className="flex flex-wrap items-center gap-2 mt-3">
           {channelStats.map(ch => {
             const pal = CHANNEL_PALETTE[ch.paletteIdx];
             return (
@@ -371,6 +445,16 @@ export default function Compare({ episodes }) {
               </span>
             );
           })}
+          {showAddForm ? (
+            <AddChannelForm onAdded={handleChannelAdded} onCancel={() => setShowAddForm(false)} />
+          ) : (
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border border-dashed border-th-border text-th-tx4 hover:text-th-tx2 hover:border-th-border transition-colors"
+            >
+              <Plus size={10} /> Add channel
+            </button>
+          )}
         </div>
       </div>
 
