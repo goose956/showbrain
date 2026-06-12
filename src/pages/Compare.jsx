@@ -74,13 +74,11 @@ function topValue(episodes, dimKey) {
   return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
 }
 
-function postsPerMonth(episodes) {
-  if (episodes.length < 2) return null;
-  const dates = episodes.map(e => new Date(e.publishedAt)).filter(d => !isNaN(d)).sort((a, b) => a - b);
-  if (dates.length < 2) return null;
-  const months = (dates[dates.length - 1] - dates[0]) / (1000 * 60 * 60 * 24 * 30.4);
-  if (months < 0.5) return null;
-  return parseFloat((episodes.length / months).toFixed(1));
+function postsPerMonth(videoCount, channelCreatedAt) {
+  if (!videoCount || !channelCreatedAt) return null;
+  const months = (Date.now() - new Date(channelCreatedAt)) / (1000 * 60 * 60 * 24 * 30.4);
+  if (months < 1) return null;
+  return parseFloat((videoCount / months).toFixed(1));
 }
 
 function buildChannelStats(episodes, channels = []) {
@@ -120,7 +118,7 @@ function buildChannelStats(episodes, channels = []) {
       channelCreatedAt: meta.channelCreatedAt || null,
       avgViews, avgLikes, avgComments, engagementRate,
       viewsPerSub, growthPct, recentAvg,
-      ppm: postsPerMonth(eps),
+      ppm: postsPerMonth(meta.videoCount, meta.channelCreatedAt),
       topFormat: topValue(eps, 'format'),
       topHook: topValue(eps, 'hookType'),
       topContent: topValue(eps, 'contentType'),
