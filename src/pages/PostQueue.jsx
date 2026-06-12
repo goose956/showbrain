@@ -487,7 +487,7 @@ export default function PostQueue({ episodes }) {
         </div>
 
         {/* Platform filter */}
-        <div className="flex gap-1 px-3 py-2 border-b border-th-border overflow-x-auto shrink-0">
+        <div className="flex flex-wrap gap-1 px-3 py-2 border-b border-th-border shrink-0">
           {PLATFORMS.map(({ id, label, icon: Icon, color }) => {
             const active = platformFilter === id;
             const colorMap = { sky: 'text-sky-400', blue: 'text-blue-400', pink: 'text-pink-400', amber: 'text-amber-400' };
