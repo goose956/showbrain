@@ -128,7 +128,7 @@ function MockRow({ title, views, badge, badgeColor }) {
 
 // ── main ──────────────────────────────────────────────────────────────────────
 
-export default function Waitlist() {
+export default function Waitlist({ onGoLogin }) {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -155,6 +155,24 @@ export default function Waitlist() {
 
   return (
     <div className="h-full overflow-y-auto bg-th-bg">
+      {/* ── Nav bar ── */}
+      <div className="flex items-center justify-between px-8 py-4 border-b border-th-border/40">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-th-accent flex items-center justify-center">
+            <Zap size={13} className="text-th-accentFg" />
+          </div>
+          <span className="text-th-tx1 text-sm font-semibold">ShowBrain</span>
+        </div>
+        {onGoLogin && (
+          <button
+            onClick={onGoLogin}
+            className="px-4 py-2 rounded-lg border border-th-border text-th-tx2 text-sm font-medium hover:border-th-accent hover:text-th-accent transition-colors"
+          >
+            Log in
+          </button>
+        )}
+      </div>
+
       {/* ── Hero ── */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">

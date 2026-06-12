@@ -156,10 +156,14 @@ export default function App() {
   // ── auth screens ──────────────────────────────────────────────────────────
 
   if (!currentUser) {
+    if (authScreen === 'login') {
+      return <Login onAuth={handleAuth} onGoBack={() => setAuthScreen('home')} />;
+    }
     if (authScreen === 'register') {
       return <Register onAuth={handleAuth} onGoLogin={() => setAuthScreen('login')} />;
     }
-    return <Login onAuth={handleAuth} onGoRegister={() => setAuthScreen('register')} />;
+    // Default: show the public landing page with a login button
+    return <Waitlist onGoLogin={() => setAuthScreen('login')} />;
   }
 
   // ── app ───────────────────────────────────────────────────────────────────

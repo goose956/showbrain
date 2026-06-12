@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Zap, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Zap, Loader2, AlertCircle, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
-export default function Login({ onAuth, onGoRegister }) {
+export default function Login({ onAuth, onGoBack }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -86,12 +86,11 @@ export default function Login({ onAuth, onGoRegister }) {
           </button>
         </form>
 
-        <p className="text-th-tx4 text-xs text-center mt-5">
-          Need an account?{' '}
-          <button onClick={onGoRegister} className="text-th-accent hover:text-th-accentH transition-colors">
-            Register
+        {onGoBack && (
+          <button onClick={onGoBack} className="flex items-center gap-1.5 text-th-tx4 text-xs hover:text-th-tx2 transition-colors mx-auto mt-5">
+            <ArrowLeft size={12} /> Back
           </button>
-        </p>
+        )}
       </div>
     </div>
   );
