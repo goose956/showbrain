@@ -1,6 +1,7 @@
 import { getChannelVideosPage, getAllChannelVideos, getVideoDurations } from './youtube.js';
 import { getAudioUrl, downloadAudio, cleanupAudio } from './ytdlp.js';
 import { transcribeUrl, transcribeFile } from './transcribe.js';
+import { fetchCaptions, cleanupCaptions } from './captions.js';
 import { analyseEpisode, analyseDimensions } from './analyse.js';
 import { getChannel, upsertChannel, upsertEpisode, getEpisodeByVideoId, getUserSettings, savePost } from './store.js';
 import { generatePosts } from './analyse.js';
@@ -46,17 +47,29 @@ async function processVideo(userId, video, channelId, channelName) {
 
   let audioPath = null;
   try {
-    // Try URL-mode first: yt-dlp extracts direct stream URL, Deepgram fetches it
     let transcript;
+
+    // 1. Try YouTube captions (fast, no download, no bot detection)
     try {
-      console.log(`[sync:${userId}] Getting audio URL for: ${video.videoId}`);
-      const audioUrl = await getAudioUrl(video.youtubeUrl);
-      console.log(`[sync:${userId}] Transcribing via URL mode`);
-      transcript = await transcribeUrl(audioUrl);
-    } catch (urlErr) {
-      console.warn(`[sync:${userId}] URL mode failed (${urlErr.message}), falling back to download`);
-      audioPath = await downloadAudio(video.youtubeUrl, video.videoId);
-      transcript = await transcribeFile(audioPath);
+      console.log(`[sync:${userId}] Fetching captions for: ${video.videoId}`);
+      const raw = await fetchCaptions(video.videoId);
+      console.log(`[sync:${userId}] Cleaning up captions with Claude`);
+      transcript = await cleanupCaptions(raw, video.title);
+      console.log(`[sync:${userId}] Captions ready (${transcript.length} chars)`);
+    } catch (captionErr) {
+      console.warn(`[sync:${userId}] Captions failed (${captionErr.message}), trying Deepgram URL mode`);
+
+      // 2. Try yt-dlp --get-url → Deepgram URL mode
+      try {
+        const audioUrl = await getAudioUrl(video.youtubeUrl);
+        transcript = await transcribeUrl(audioUrl);
+      } catch (urlErr) {
+        console.warn(`[sync:${userId}] URL mode failed (${urlErr.message}), falling back to download`);
+
+        // 3. Last resort: download audio and transcribe
+        audioPath = await downloadAudio(video.youtubeUrl, video.videoId);
+        transcript = await transcribeFile(audioPath);
+      }
     }
 
     const [analysis, dimensions] = await Promise.all([
