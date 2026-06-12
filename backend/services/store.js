@@ -9,8 +9,10 @@ function rowToChannel(r) {
     name: r.name,
     thumbnail: r.thumbnail,
     subscriberCount: Number(r.subscriber_count) || 0,
+    totalViewCount: Number(r.total_view_count) || 0,
     videoCount: Number(r.video_count) || 0,
     description: r.description || null,
+    channelCreatedAt: r.channel_created_at || null,
     isPrimary: r.is_primary || false,
     addedAt: r.added_at,
     lastSyncedAt: r.last_synced_at,
@@ -75,24 +77,28 @@ export async function getChannel(userId, channelId) {
 
 export async function upsertChannel(userId, channel) {
   await query(`
-    INSERT INTO channels (id, user_id, name, thumbnail, subscriber_count, video_count, description, is_primary, added_at, last_synced_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    INSERT INTO channels (id, user_id, name, thumbnail, subscriber_count, total_view_count, video_count, description, channel_created_at, is_primary, added_at, last_synced_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
     ON CONFLICT (id, user_id) DO UPDATE SET
-      name             = EXCLUDED.name,
-      thumbnail        = EXCLUDED.thumbnail,
-      subscriber_count = EXCLUDED.subscriber_count,
-      video_count      = EXCLUDED.video_count,
-      description      = EXCLUDED.description,
-      is_primary       = EXCLUDED.is_primary,
-      added_at         = EXCLUDED.added_at,
-      last_synced_at   = EXCLUDED.last_synced_at
+      name               = EXCLUDED.name,
+      thumbnail          = EXCLUDED.thumbnail,
+      subscriber_count   = EXCLUDED.subscriber_count,
+      total_view_count   = EXCLUDED.total_view_count,
+      video_count        = EXCLUDED.video_count,
+      description        = EXCLUDED.description,
+      channel_created_at = EXCLUDED.channel_created_at,
+      is_primary         = EXCLUDED.is_primary,
+      added_at           = EXCLUDED.added_at,
+      last_synced_at     = EXCLUDED.last_synced_at
   `, [
     channel.id, userId,
     channel.name || null,
     channel.thumbnail || null,
     channel.subscriberCount || 0,
+    channel.totalViewCount || 0,
     channel.videoCount || 0,
     channel.description || null,
+    channel.channelCreatedAt || null,
     channel.isPrimary || false,
     channel.addedAt || new Date().toISOString(),
     channel.lastSyncedAt || null,

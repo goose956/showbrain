@@ -36,6 +36,9 @@ export async function getChannelInfo(channelId) {
     description: ch.snippet.description,
     thumbnail: ch.snippet.thumbnails?.medium?.url,
     videoCount: parseInt(ch.statistics.videoCount || 0),
+    subscriberCount: parseInt(ch.statistics.subscriberCount || 0),
+    totalViewCount: parseInt(ch.statistics.viewCount || 0),
+    channelCreatedAt: ch.snippet.publishedAt || null,
   };
 }
 

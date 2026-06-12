@@ -30,12 +30,14 @@ export async function initSchema() {
       user_id          TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
       name             TEXT,
       thumbnail        TEXT,
-      subscriber_count BIGINT DEFAULT 0,
-      video_count      INT DEFAULT 0,
-      description      TEXT,
-      is_primary       BOOLEAN DEFAULT FALSE,
-      added_at         TIMESTAMPTZ,
-      last_synced_at   TIMESTAMPTZ,
+      subscriber_count  BIGINT DEFAULT 0,
+      total_view_count  BIGINT DEFAULT 0,
+      video_count       INT DEFAULT 0,
+      description       TEXT,
+      channel_created_at TIMESTAMPTZ,
+      is_primary        BOOLEAN DEFAULT FALSE,
+      added_at          TIMESTAMPTZ,
+      last_synced_at    TIMESTAMPTZ,
       PRIMARY KEY (id, user_id)
     );
 
@@ -66,6 +68,8 @@ export async function initSchema() {
     );
 
     ALTER TABLE episodes ADD COLUMN IF NOT EXISTS transcript_status TEXT DEFAULT 'ok';
+    ALTER TABLE channels ADD COLUMN IF NOT EXISTS total_view_count BIGINT DEFAULT 0;
+    ALTER TABLE channels ADD COLUMN IF NOT EXISTS channel_created_at TIMESTAMPTZ;
 
     CREATE INDEX IF NOT EXISTS episodes_user_channel ON episodes (user_id, channel_id);
     CREATE INDEX IF NOT EXISTS episodes_video_id     ON episodes (user_id, video_id);

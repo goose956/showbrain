@@ -1,4 +1,4 @@
-import { getChannelVideosPage, getAllChannelVideos, getVideoDurations } from './youtube.js';
+import { getChannelVideosPage, getAllChannelVideos, getVideoDurations, getChannelInfo } from './youtube.js';
 import { getAudioUrl, downloadAudio, cleanupAudio } from './ytdlp.js';
 import { transcribeUrl, transcribeFile } from './transcribe.js';
 import { fetchCaptions, cleanupCaptions } from './captions.js';
@@ -198,7 +198,10 @@ export async function syncChannel({ userId, channelId, videoIds, maxVideos = 20,
     }
 
     const lastSyncedAt = new Date().toISOString();
-    await upsertChannel(userId, { ...channel, lastSyncedAt });
+    // Refresh subscriber count + channel stats on every sync
+    let freshInfo = {};
+    try { freshInfo = await getChannelInfo(channelId); } catch {}
+    await upsertChannel(userId, { ...channel, ...freshInfo, lastSyncedAt });
     state.lastSyncedAt = lastSyncedAt;
     console.log(`[sync:${userId}] Done. ${state.processed} processed, ${state.errors.length} errors.`);
   } finally {

@@ -48,6 +48,18 @@ function fmt(n) {
   return Math.round(n).toString();
 }
 
+function channelAge(createdAt) {
+  if (!createdAt) return '—';
+  const years = (Date.now() - new Date(createdAt)) / (1000 * 60 * 60 * 24 * 365.25);
+  if (years < 1) return `${Math.round(years * 12)}mo`;
+  return `${years.toFixed(1)}yr`;
+}
+
+function viewsPerSub(totalViewCount, subscriberCount) {
+  if (!subscriberCount || !totalViewCount) return '—';
+  return (totalViewCount / subscriberCount).toFixed(1);
+}
+
 function pct(n) {
   if (!n) return '—';
   return `${(n * 100).toFixed(1)}%`;
@@ -77,7 +89,7 @@ function postsPerMonth(episodes) {
 }
 
 // Build per-channel stats for the table + Claude
-function buildChannelStats(episodes) {
+function buildChannelStats(episodes, channels = []) {
   const byChannel = {};
   for (const ep of episodes) {
     if (!ep.channelId) continue;
@@ -86,11 +98,20 @@ function buildChannelStats(episodes) {
   }
 
   return Object.entries(byChannel).map(([channelId, { name, episodes: eps }], idx) => {
+    const meta = channels.find(c => c.id === channelId) || {};
     const withViews = eps.filter(e => e.viewCount > 0);
     const avgViews = avg(withViews.map(e => e.viewCount));
     const avgLikes = avg(withViews.map(e => e.likeCount || 0));
     const avgComments = avg(withViews.map(e => e.commentCount || 0));
     const engagementRate = avgViews > 0 ? (avgLikes + avgComments) / avgViews : 0;
+
+    // Growth: compare avg views of most recent 10 vs previous 10
+    const sorted = [...eps].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+    const recent = sorted.slice(0, 10).filter(e => e.viewCount > 0);
+    const older = sorted.slice(10, 20).filter(e => e.viewCount > 0);
+    const recentAvg = recent.length ? avg(recent.map(e => e.viewCount)) : null;
+    const olderAvg = older.length ? avg(older.map(e => e.viewCount)) : null;
+    const growthPct = recentAvg && olderAvg ? ((recentAvg - olderAvg) / olderAvg) * 100 : null;
 
     return {
       channelId,
@@ -98,10 +119,16 @@ function buildChannelStats(episodes) {
       paletteIdx: idx % CHANNEL_PALETTE.length,
       episodeCount: eps.length,
       analysedCount: eps.filter(e => e.dimensions).length,
+      subscriberCount: meta.subscriberCount || 0,
+      totalViewCount: meta.totalViewCount || 0,
+      channelCreatedAt: meta.channelCreatedAt || null,
       avgViews,
       avgLikes,
       avgComments,
       engagementRate,
+      viewsPerSub: meta.subscriberCount > 0 ? avgViews / meta.subscriberCount : null,
+      growthPct,
+      recentAvg,
       ppm: postsPerMonth(eps),
       topFormat: topValue(eps, 'format'),
       topHook: topValue(eps, 'hookType'),
@@ -308,19 +335,21 @@ function AddChannelForm({ onAdded, onCancel }) {
 // ── main page ─────────────────────────────────────────────────────────────────
 
 const TABLE_COLS = [
-  { key: 'name',           label: 'Channel',    sortable: true },
-  { key: 'episodeCount',   label: 'Episodes',   sortable: true },
-  { key: 'avgViews',       label: 'Avg Views',  sortable: true },
-  { key: 'avgLikes',       label: 'Avg Likes',  sortable: true },
-  { key: 'avgComments',    label: 'Avg Comments', sortable: true },
-  { key: 'engagementRate', label: 'Engagement', sortable: true },
-  { key: 'ppm',            label: 'Posts/Mo',   sortable: true },
-  { key: 'topFormat',      label: 'Top Format', sortable: false },
-  { key: 'topHook',        label: 'Top Hook',   sortable: false },
-  { key: 'topContent',     label: 'Top Content',sortable: false },
+  { key: 'name',            label: 'Channel',      sortable: true },
+  { key: 'subscriberCount', label: 'Subscribers',  sortable: true },
+  { key: 'channelCreatedAt',label: 'Age',          sortable: true },
+  { key: 'episodeCount',    label: 'Episodes',     sortable: true },
+  { key: 'avgViews',        label: 'Avg Views',    sortable: true },
+  { key: 'viewsPerSub',     label: 'Views/Sub',    sortable: true },
+  { key: 'growthPct',       label: 'Trend',        sortable: true },
+  { key: 'engagementRate',  label: 'Engagement',   sortable: true },
+  { key: 'ppm',             label: 'Posts/Mo',     sortable: true },
+  { key: 'topFormat',       label: 'Top Format',   sortable: false },
+  { key: 'topHook',         label: 'Top Hook',     sortable: false },
+  { key: 'topContent',      label: 'Top Content',  sortable: false },
 ];
 
-export default function Compare({ episodes, onChannelsLoaded }) {
+export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
   const [sortCol, setSortCol] = useState('avgViews');
   const [sortDir, setSortDir] = useState('desc');
   const [insights, setInsights] = useState(null);
@@ -332,7 +361,7 @@ export default function Compare({ episodes, onChannelsLoaded }) {
     fetchSavedInsights('compareInsights').then(saved => { if (saved) setInsights(saved); }).catch(() => {});
   }, []);
 
-  const channelStats = useMemo(() => buildChannelStats(episodes), [episodes]);
+  const channelStats = useMemo(() => buildChannelStats(episodes, channels), [episodes, channels]);
 
   const handleChannelAdded = (channel) => {
     setShowAddForm(false);
@@ -496,10 +525,18 @@ export default function Compare({ episodes, onChannelsLoaded }) {
                         {isTop && <span className="text-[10px] text-th-accent bg-th-accent/10 border border-th-accent/20 px-1.5 py-0.5 rounded-full">Top</span>}
                       </div>
                     </td>
+                    <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{fmt(ch.subscriberCount)}</td>
+                    <td className="px-4 py-3 text-th-tx3 text-xs">{channelAge(ch.channelCreatedAt)}</td>
                     <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{ch.episodeCount}</td>
                     <td className={`px-4 py-3 text-xs tabular-nums font-medium ${pal.text}`}>{fmt(ch.avgViews)}</td>
-                    <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{fmt(ch.avgLikes)}</td>
-                    <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{fmt(ch.avgComments)}</td>
+                    <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{ch.viewsPerSub ? ch.viewsPerSub.toFixed(2) : '—'}</td>
+                    <td className="px-4 py-3 text-xs tabular-nums">
+                      {ch.growthPct !== null ? (
+                        <span className={ch.growthPct >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                          {ch.growthPct >= 0 ? '+' : ''}{ch.growthPct.toFixed(0)}%
+                        </span>
+                      ) : <span className="text-th-tx4">—</span>}
+                    </td>
                     <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{pct(ch.engagementRate)}</td>
                     <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{ch.ppm || '—'}</td>
                     <td className="px-4 py-3">
