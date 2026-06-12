@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, LogOut, ChevronDown, Settings, Moon, Sun, SunMoon, Loader2, CheckCircle } from 'lucide-react';
+import { User, LogOut, ChevronDown, Settings, ShieldCheck, Moon, Sun, SunMoon, Loader2, CheckCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 const THEME_ICONS = { dark: Moon, light: Sun, midnight: SunMoon };
@@ -92,7 +92,7 @@ export default function Topbar({ currentUser, isAdmin, onLogout, onNavigate, syn
       {/* ── Spacer ─────────────────────────────────────────────────── */}
       <div className="flex-1" />
 
-      {/* ── Settings ───────────────────────────────────────────────── */}
+      {/* ── Settings / Admin ───────────────────────────────────────── */}
       <button
         onClick={() => onNavigate('settings')}
         className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-th-raised border border-transparent hover:border-th-border text-th-tx3 hover:text-th-tx1 text-xs font-medium transition-colors"
@@ -100,6 +100,15 @@ export default function Topbar({ currentUser, isAdmin, onLogout, onNavigate, syn
         <Settings size={13} />
         Settings
       </button>
+      {isAdmin && (
+        <button
+          onClick={() => onNavigate('admin')}
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-th-raised border border-transparent hover:border-th-border text-th-tx3 hover:text-th-tx1 text-xs font-medium transition-colors"
+        >
+          <ShieldCheck size={13} />
+          Admin
+        </button>
+      )}
 
       {/* ── User dropdown ──────────────────────────────────────────── */}
       <div className="relative" ref={dropRef}>
