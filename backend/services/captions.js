@@ -1,7 +1,10 @@
 import { YoutubeTranscript } from 'youtube-transcript';
 import OpenAI from 'openai';
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getClient() {
+  if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not set');
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 export async function fetchCaptions(videoId) {
   const segments = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
@@ -19,7 +22,7 @@ export async function fetchCaptions(videoId) {
 }
 
 export async function cleanupCaptions(rawText, title) {
-  const response = await client.chat.completions.create({
+  const response = await getClient().chat.completions.create({
     model: 'gpt-4o-mini',
     max_tokens: 8192,
     messages: [
