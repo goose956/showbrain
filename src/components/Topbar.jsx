@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, LogOut, ChevronDown, Settings, ShieldCheck, Moon, Sun, SunMoon, Loader2, CheckCircle, Gauge, TvMinimalPlay, LayoutDashboard } from 'lucide-react';
+import { User, LogOut, ChevronDown, Settings, ShieldCheck, Moon, Sun, SunMoon, Loader2, CheckCircle, Gauge, TvMinimalPlay, LayoutDashboard, Menu } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 const THEME_ICONS = { dark: Moon, light: Sun, midnight: SunMoon };
@@ -57,7 +57,7 @@ const NAV_ITEMS = [
   { id: 'dashboard', label: 'Library',   icon: LayoutDashboard, iconBg: 'bg-indigo-500', iconColor: 'text-white' },
 ];
 
-export default function Topbar({ currentUser, isAdmin, onLogout, onNavigate, syncStatus, activePage }) {
+export default function Topbar({ currentUser, isAdmin, onLogout, onNavigate, syncStatus, activePage, onMenuClick }) {
   const { theme, setTheme, themes } = useTheme();
   const [userOpen, setUserOpen] = useState(false);
   const dropRef = useRef(null);
@@ -70,6 +70,15 @@ export default function Topbar({ currentUser, isAdmin, onLogout, onNavigate, syn
 
   return (
     <header className="h-16 shrink-0 border-b border-th-border bg-th-surface flex items-center px-4 gap-3">
+
+      {/* ── Hamburger (mobile only) ────────────────────────────────── */}
+      <button
+        onClick={onMenuClick}
+        className="md:hidden p-2 -ml-1 rounded-lg text-th-tx3 hover:text-th-tx1 hover:bg-th-raised transition-colors"
+        aria-label="Open menu"
+      >
+        <Menu size={18} />
+      </button>
 
       {/* ── Theme switcher ─────────────────────────────────────────── */}
       <div className="flex items-center gap-1 bg-th-raised border border-th-border rounded-lg p-0.5">
@@ -98,8 +107,8 @@ export default function Topbar({ currentUser, isAdmin, onLogout, onNavigate, syn
       {/* ── Spacer ─────────────────────────────────────────────────── */}
       <div className="flex-1" />
 
-      {/* ── Primary nav ────────────────────────────────────────────── */}
-      <div className="flex items-center gap-1">
+      {/* ── Primary nav (desktop only) ─────────────────────────────── */}
+      <div className="hidden md:flex items-center gap-1">
         {NAV_ITEMS.map(({ id, label, icon: Icon, iconBg, iconColor }) => {
           const active = activePage === id;
           return (

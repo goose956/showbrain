@@ -29,6 +29,7 @@ const EMPTY_SYNC = {
 
 export default function App() {
   const [page, setPage] = useState('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [channels, setChannels] = useState([]);
   const [episodes, setEpisodes] = useState([]);
   const [scriptBrief, setScriptBrief] = useState(null);
@@ -124,6 +125,7 @@ export default function App() {
   const handlePageChange = (newPage) => {
     if (newPage !== 'scriptwriter') setScriptBrief(null);
     setPage(newPage);
+    setSidebarOpen(false);
   };
 
   // Called by Channel page when a sync starts
@@ -195,7 +197,13 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-th-bg overflow-hidden">
-      <Sidebar active={page} onChange={handlePageChange} isAdmin={currentUser.isAdmin} />
+      <Sidebar
+        active={page}
+        onChange={handlePageChange}
+        isAdmin={currentUser.isAdmin}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Topbar
           currentUser={currentUser.username}
@@ -204,6 +212,7 @@ export default function App() {
           onNavigate={handlePageChange}
           syncStatus={syncStatus}
           activePage={page}
+          onMenuClick={() => setSidebarOpen(true)}
         />
         <main className="flex-1 min-h-0 overflow-y-auto">
           {renderPage()}

@@ -2,10 +2,16 @@ import { useState } from 'react';
 import {
   Search, BarChart2, Lightbulb,
   Inbox, Plug, PenLine, FlaskConical,
-  GitCompare, LineChart, ChevronDown, Zap,
+  GitCompare, LineChart, ChevronDown, Zap, X,
+  Gauge, TvMinimalPlay, LayoutDashboard,
 } from 'lucide-react';
 
-/* ── Per-item icon colours (fixed across all themes) ─────────────── */
+const TOP_NAV = [
+  { id: 'overview',  label: 'Dashboard', icon: Gauge,           iconBg: 'bg-rose-500' },
+  { id: 'channel',   label: 'Channel',   icon: TvMinimalPlay,   iconBg: 'bg-blue-500' },
+  { id: 'dashboard', label: 'Library',   icon: LayoutDashboard, iconBg: 'bg-indigo-500' },
+];
+
 const nav = [
   {
     section: 'Analyse',
@@ -39,7 +45,7 @@ const nav = [
   },
 ];
 
-export default function Sidebar({ active, onChange, isAdmin }) {
+function SidebarContent({ active, onChange, onClose }) {
   const initialOpen = () => {
     const s = {};
     nav.forEach(({ section }) => { s[section] = true; });
@@ -50,19 +56,50 @@ export default function Sidebar({ active, onChange, isAdmin }) {
   const toggle = (section) => setOpen(o => ({ ...o, [section]: !o[section] }));
 
   const handleClick = (id, section) => {
-    setOpen(o => ({ ...o, [section]: true }));
+    if (section) setOpen(o => ({ ...o, [section]: true }));
     onChange(id);
+    onClose?.();
   };
 
   return (
-    <aside className="w-52 h-screen bg-th-sidebar border-r border-th-sborder flex flex-col shrink-0">
+    <div className="w-52 h-full bg-th-sidebar border-r border-th-sborder flex flex-col">
 
       {/* ── Logo ─────────────────────────────────────────────────── */}
-      <div className="px-4 h-11 flex items-center gap-2.5 border-b border-th-sborder shrink-0">
-        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-th-accent to-th-accentH flex items-center justify-center shadow-lg shrink-0">
-          <Zap size={12} className="text-white" />
+      <div className="px-4 h-16 flex items-center justify-between border-b border-th-sborder shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-th-accent to-th-accentH flex items-center justify-center shadow-lg shrink-0">
+            <Zap size={12} className="text-white" />
+          </div>
+          <span className="text-th-tx1 font-bold text-sm tracking-tight">ShowBrain</span>
         </div>
-        <span className="text-th-tx1 font-bold text-sm tracking-tight">ShowBrain</span>
+        {onClose && (
+          <button onClick={onClose} className="md:hidden p-1 text-th-tx4 hover:text-th-tx1 transition-colors">
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
+      {/* ── Top nav (mobile only) ─────────────────────────────────── */}
+      <div className="md:hidden px-2 pt-3 space-y-0.5">
+        {TOP_NAV.map(({ id, label, icon: Icon, iconBg }) => {
+          const isActive = active === id;
+          return (
+            <button
+              key={id}
+              onClick={() => handleClick(id)}
+              className={`w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-xs transition-all group ${
+                isActive ? 'bg-white/10 text-th-tx1' : 'text-th-tx3 hover:text-th-tx1 hover:bg-white/5'
+              }`}
+            >
+              <span className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${iconBg} ${isActive ? 'opacity-100' : 'opacity-55 group-hover:opacity-85'}`}>
+                <Icon size={11} className="text-white" />
+              </span>
+              <span className="truncate">{label}</span>
+              {isActive && <span className={`ml-auto w-1.5 h-1.5 rounded-full ${iconBg} shrink-0`} />}
+            </button>
+          );
+        })}
+        <div className="border-t border-th-sborder mt-2 mb-1" />
       </div>
 
       {/* ── Nav sections ─────────────────────────────────────────── */}
@@ -73,7 +110,6 @@ export default function Sidebar({ active, onChange, isAdmin }) {
 
           return (
             <div key={section} className={`rounded-xl border ${borderColor} bg-gradient-to-b ${color} overflow-hidden`}>
-              {/* Section header / toggle */}
               <button
                 onClick={() => toggle(section)}
                 className="w-full flex items-center justify-between px-3 py-2.5 transition-colors hover:bg-white/5"
@@ -87,7 +123,6 @@ export default function Sidebar({ active, onChange, isAdmin }) {
                 />
               </button>
 
-              {/* Items */}
               {isOpen && (
                 <div className="px-1.5 pb-1.5 space-y-0.5">
                   {items.map(({ id, label, icon: Icon, iconBg, iconColor }) => {
@@ -120,6 +155,32 @@ export default function Sidebar({ active, onChange, isAdmin }) {
           );
         })}
       </nav>
-    </aside>
+    </div>
+  );
+}
+
+export default function Sidebar({ active, onChange, isAdmin, isOpen, onClose }) {
+  return (
+    <>
+      {/* Desktop — always visible */}
+      <aside className="hidden md:flex h-screen shrink-0">
+        <SidebarContent active={active} onChange={onChange} />
+      </aside>
+
+      {/* Mobile — drawer overlay */}
+      {isOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+          />
+          {/* Drawer */}
+          <div className="relative z-10 h-full overflow-y-auto">
+            <SidebarContent active={active} onChange={onChange} onClose={onClose} />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
