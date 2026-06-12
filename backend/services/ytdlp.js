@@ -25,11 +25,13 @@ function resolveYtDlp() {
 
   const candidates = [
     'yt-dlp',
+    '/usr/local/bin/yt-dlp',
+    '/usr/bin/yt-dlp',
+    '/root/.local/bin/yt-dlp',
+    '/home/user/.local/bin/yt-dlp',
     '/root/.nix-profile/bin/yt-dlp',
     '/nix/var/nix/profiles/default/bin/yt-dlp',
     '/nix/var/nix/profiles/system/sw/bin/yt-dlp',
-    '/usr/local/bin/yt-dlp',
-    '/usr/bin/yt-dlp',
   ];
   for (const bin of candidates) {
     try {
