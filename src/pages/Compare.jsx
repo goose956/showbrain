@@ -316,97 +316,118 @@ function AddChannelForm({ onAdded, onCancel }) {
   );
 }
 
-// ── views over time chart ─────────────────────────────────────────────────────
+// ── per-channel growth chart ──────────────────────────────────────────────────
 
-function ViewsOverTimeChart({ channelStats }) {
-  const W = 900, H = 280, PAD = { top: 16, right: 24, bottom: 40, left: 56 };
+const CHART_COLORS = ['#8b5cf6', '#38bdf8', '#34d399', '#fbbf24', '#f472b6'];
+
+function ChannelGrowthChart({ ch }) {
+  const W = 320, H = 120, PAD = { top: 8, right: 12, bottom: 28, left: 44 };
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
+  const color = CHART_COLORS[ch.paletteIdx] || CHART_COLORS[0];
 
-  // Build per-channel time series — rolling 5-ep average to smooth spikes
-  const series = channelStats.map(ch => {
-    const pts = [...ch.episodes]
-      .filter(e => e.publishedAt && e.viewCount > 0)
-      .sort((a, b) => new Date(a.publishedAt) - new Date(b.publishedAt));
-    if (pts.length < 3) return null;
+  const launchMs = ch.channelCreatedAt ? new Date(ch.channelCreatedAt).getTime() : null;
 
-    // Rolling average
-    const smoothed = pts.map((p, i) => {
-      const window = pts.slice(Math.max(0, i - 2), i + 3);
-      const avgViews = window.reduce((s, w) => s + w.viewCount, 0) / window.length;
-      return { date: new Date(p.publishedAt), views: avgViews };
-    });
+  const pts = [...ch.episodes]
+    .filter(e => e.publishedAt && e.viewCount > 0)
+    .sort((a, b) => new Date(a.publishedAt) - new Date(b.publishedAt));
 
-    return { channelId: ch.channelId, name: ch.name, paletteIdx: ch.paletteIdx, pts: smoothed };
-  }).filter(Boolean);
+  if (pts.length < 3) return (
+    <div className="flex items-center justify-center h-20 text-th-tx4 text-xs">Not enough data</div>
+  );
 
-  if (!series.length) return null;
-
-  const allDates = series.flatMap(s => s.pts.map(p => p.date));
-  const allViews = series.flatMap(s => s.pts.map(p => p.views));
-  const minDate = new Date(Math.min(...allDates));
-  const maxDate = new Date(Math.max(...allDates));
-  const maxViews = Math.max(...allViews);
-  const dateRange = maxDate - minDate || 1;
-
-  const x = (date) => ((date - minDate) / dateRange) * innerW;
-  const y = (views) => innerH - (views / maxViews) * innerH;
-
-  const BAR_COLORS = ['#8b5cf6', '#38bdf8', '#34d399', '#fbbf24', '#f472b6'];
-
-  // Y axis ticks
-  const yTicks = [0, 0.25, 0.5, 0.75, 1].map(t => ({
-    v: maxViews * t,
-    y: innerH - t * innerH,
-  }));
-
-  // X axis ticks — ~5 evenly spaced years/dates
-  const xTicks = Array.from({ length: 5 }, (_, i) => {
-    const d = new Date(minDate.getTime() + (dateRange * i) / 4);
-    return { d, x: x(d) };
+  // Rolling 5-ep average, X = months since channel launch (or since first video)
+  const firstMs = launchMs || new Date(pts[0].publishedAt).getTime();
+  const smoothed = pts.map((p, i) => {
+    const win = pts.slice(Math.max(0, i - 2), i + 3);
+    const avgV = win.reduce((s, w) => s + w.viewCount, 0) / win.length;
+    const monthsSinceLaunch = (new Date(p.publishedAt).getTime() - firstMs) / (1000 * 60 * 60 * 24 * 30.4);
+    return { months: Math.max(0, monthsSinceLaunch), views: avgV };
   });
 
-  function fmtViews(n) {
+  const maxMonths = smoothed[smoothed.length - 1].months || 1;
+  const maxViews = Math.max(...smoothed.map(p => p.views));
+
+  const x = (m) => (m / maxMonths) * innerW;
+  const y = (v) => innerH - (v / maxViews) * innerH;
+
+  function fmtV(n) {
     if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
     if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
     return Math.round(n);
   }
 
-  function fmtDate(d) {
-    return d.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' });
-  }
+  const yTicks = [0, 0.5, 1].map(t => ({ v: maxViews * t, y: innerH - t * innerH }));
+  const xTicks = [0, 0.5, 1].map(t => ({ m: maxMonths * t, x: (maxMonths * t / maxMonths) * innerW }));
+
+  const d = smoothed.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.months).toFixed(1)},${y(p.views).toFixed(1)}`).join(' ');
+
+  // Area fill path
+  const area = `${d} L${x(smoothed[smoothed.length - 1].months).toFixed(1)},${innerH} L${x(0)},${innerH} Z`;
+
+  const gradId = `grad-${ch.channelId.replace(/[^a-z0-9]/gi, '')}`;
 
   return (
-    <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ minWidth: 480 }}>
-        <g transform={`translate(${PAD.left},${PAD.top})`}>
-          {/* Grid lines */}
-          {yTicks.map((t, i) => (
-            <g key={i}>
-              <line x1={0} y1={t.y} x2={innerW} y2={t.y} stroke="currentColor" strokeOpacity={0.08} strokeWidth={1} />
-              <text x={-8} y={t.y + 4} textAnchor="end" fontSize={10} fill="currentColor" fillOpacity={0.4}>
-                {fmtViews(t.v)}
-              </text>
-            </g>
-          ))}
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <g transform={`translate(${PAD.left},${PAD.top})`}>
+        {yTicks.map((t, i) => (
+          <g key={i}>
+            <line x1={0} y1={t.y} x2={innerW} y2={t.y} stroke="currentColor" strokeOpacity={0.06} strokeWidth={1} />
+            <text x={-6} y={t.y + 3} textAnchor="end" fontSize={9} fill="currentColor" fillOpacity={0.35}>{fmtV(t.v)}</text>
+          </g>
+        ))}
+        {xTicks.map((t, i) => (
+          <text key={i} x={t.x} y={innerH + 16} textAnchor="middle" fontSize={9} fill="currentColor" fillOpacity={0.35}>
+            {Math.round(t.m)}mo
+          </text>
+        ))}
+        <path d={area} fill={`url(#${gradId})`} />
+        <path d={d} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}
 
-          {/* X axis ticks */}
-          {xTicks.map((t, i) => (
-            <text key={i} x={t.x} y={innerH + 20} textAnchor="middle" fontSize={10} fill="currentColor" fillOpacity={0.4}>
-              {fmtDate(t.d)}
-            </text>
-          ))}
+function GrowthChartGrid({ channelStats }) {
+  const eligible = channelStats.filter(ch =>
+    ch.episodes.filter(e => e.viewCount > 0 && e.publishedAt).length >= 3
+  );
+  if (!eligible.length) return null;
 
-          {/* Lines */}
-          {series.map(s => {
-            const color = BAR_COLORS[s.paletteIdx] || BAR_COLORS[0];
-            const d = s.pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.date).toFixed(1)},${y(p.views).toFixed(1)}`).join(' ');
-            return (
-              <path key={s.channelId} d={d} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" opacity={0.9} />
-            );
-          })}
-        </g>
-      </svg>
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {eligible.map(ch => {
+        const pal = CHANNEL_PALETTE[ch.paletteIdx];
+        const growthLabel = ch.growthPct !== null
+          ? `${ch.growthPct >= 0 ? '+' : ''}${ch.growthPct.toFixed(0)}% momentum`
+          : null;
+        return (
+          <div key={ch.channelId} className="bg-th-surface border border-th-border rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${pal.bar}`} />
+                <span className="text-th-tx1 text-xs font-medium truncate">{ch.name}</span>
+                {ch.isPrimary && (
+                  <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0">You</span>
+                )}
+              </div>
+              {growthLabel && (
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${ch.growthPct >= 0 ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'}`}>
+                  {growthLabel}
+                </span>
+              )}
+            </div>
+            <ChannelGrowthChart ch={ch} />
+            <p className="text-th-tx4 text-[10px] mt-1">Months since launch · rolling avg views</p>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -685,28 +706,11 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
           </div>
         </div>
 
-        {/* ── Views over time ── */}
-        {channelStats.some(ch => ch.episodes.some(e => e.viewCount > 0 && e.publishedAt)) && (
+        {/* ── Growth charts ── */}
+        {channelStats.some(ch => ch.episodes.filter(e => e.viewCount > 0 && e.publishedAt).length >= 3) && (
           <div className="px-6 pt-6 pb-2">
-            <p className="text-th-tx3 text-xs font-medium uppercase tracking-wider mb-3">Views over time</p>
-            <div className="bg-th-surface border border-th-border rounded-xl p-4">
-              {/* Legend */}
-              <div className="flex flex-wrap gap-3 mb-4">
-                {channelStats.map(ch => {
-                  const BAR_COLORS = ['#8b5cf6', '#38bdf8', '#34d399', '#fbbf24', '#f472b6'];
-                  const color = BAR_COLORS[ch.paletteIdx] || BAR_COLORS[0];
-                  return (
-                    <span key={ch.channelId} className="flex items-center gap-1.5 text-xs text-th-tx3">
-                      <span className="w-3 h-0.5 rounded-full inline-block" style={{ backgroundColor: color }} />
-                      {ch.name}
-                      {ch.isPrimary && <span className="text-[10px] font-semibold text-amber-300">(You)</span>}
-                    </span>
-                  );
-                })}
-              </div>
-              <ViewsOverTimeChart channelStats={channelStats} />
-              <p className="text-th-tx4 text-[11px] mt-2">Rolling average of view counts per episode. Shows momentum trends over channel lifetime.</p>
-            </div>
+            <p className="text-th-tx3 text-xs font-medium uppercase tracking-wider mb-3">Growth trajectory</p>
+            <GrowthChartGrid channelStats={channelStats} />
           </div>
         )}
 
