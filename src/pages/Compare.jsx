@@ -9,7 +9,7 @@ import { generateCrossChannelInsights } from '../lib/claude';
 
 const DIM_COLORS = {
   solo: 'bg-sky-500/10 text-sky-300 border-sky-500/20',
-  interview: 'bg-violet-500/10 text-violet-300 border-violet-500/20',
+  interview: 'bg-th-accent/10 text-th-accent border-th-accent/20',
   'co-hosted': 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
   'bold-claim': 'bg-red-500/10 text-red-300 border-red-500/20',
   'personal-story': 'bg-pink-500/10 text-pink-300 border-pink-500/20',
@@ -24,7 +24,7 @@ const DIM_COLORS = {
 };
 
 const CHANNEL_PALETTE = [
-  { bar: 'bg-violet-500', text: 'text-violet-300', light: 'bg-violet-500/15 border-violet-500/25 text-violet-300' },
+  { bar: 'bg-th-accent', text: 'text-th-accent', light: 'bg-th-accent/10 border-th-accent/25 text-th-accent' },
   { bar: 'bg-sky-500',    text: 'text-sky-300',    light: 'bg-sky-500/15 border-sky-500/25 text-sky-300' },
   { bar: 'bg-emerald-500',text: 'text-emerald-300',light: 'bg-emerald-500/15 border-emerald-500/25 text-emerald-300' },
   { bar: 'bg-amber-500',  text: 'text-amber-300',  light: 'bg-amber-500/15 border-amber-500/25 text-amber-300' },
@@ -114,8 +114,8 @@ function buildChannelStats(episodes) {
 // ── sort icon ─────────────────────────────────────────────────────────────────
 
 function SortIcon({ col, sortCol, dir }) {
-  if (col !== sortCol) return <ChevronsUpDown size={11} className="text-zinc-700" />;
-  return dir === 'asc' ? <ChevronUp size={11} className="text-violet-400" /> : <ChevronDown size={11} className="text-violet-400" />;
+  if (col !== sortCol) return <ChevronsUpDown size={11} className="text-th-tx4" />;
+  return dir === 'asc' ? <ChevronUp size={11} className="text-th-accent" /> : <ChevronDown size={11} className="text-th-accent" />;
 }
 
 // ── dimension comparison chart ────────────────────────────────────────────────
@@ -138,16 +138,16 @@ function DimCompare({ title, dimKey, channelStats }) {
   }).sort((a, b) => Math.max(...b.perChannel.map(c => c.avgViews)) - Math.max(...a.perChannel.map(c => c.avgViews)));
 
   const label = (v) => DIM_LABELS[dimKey]?.[v] || v;
-  const chipColor = DIM_COLORS[rows[0]?.val] || 'bg-zinc-800 text-zinc-400 border-zinc-700';
+  const chipColor = DIM_COLORS[rows[0]?.val] || 'bg-th-raised text-th-tx2 border-th-border';
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-      <p className="text-white text-sm font-semibold mb-4">{title}</p>
+    <div className="bg-th-surface border border-th-border rounded-xl p-5">
+      <p className="text-th-tx1 text-sm font-semibold mb-4">{title}</p>
       <div className="space-y-4">
         {rows.slice(0, 6).map(({ val, perChannel, maxViews }) => (
           <div key={val}>
             <div className="flex items-center gap-2 mb-1.5">
-              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${DIM_COLORS[val] || 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
+              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${DIM_COLORS[val] || 'bg-th-raised text-th-tx2 border-th-border'}`}>
                 {label(val)}
               </span>
             </div>
@@ -157,8 +157,8 @@ function DimCompare({ title, dimKey, channelStats }) {
                 const w = maxViews > 0 ? (ch.avgViews / maxViews) * 100 : 0;
                 return (
                   <div key={ch.channelId} className="flex items-center gap-2">
-                    <span className="text-zinc-600 text-[11px] w-24 truncate shrink-0">{ch.name}</span>
-                    <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                    <span className="text-th-tx4 text-[11px] w-24 truncate shrink-0">{ch.name}</span>
+                    <div className="flex-1 h-1.5 bg-th-raised rounded-full overflow-hidden">
                       <div className={`h-full ${pal.bar} rounded-full transition-all`} style={{ width: `${w}%` }} />
                     </div>
                     <span className={`text-[11px] tabular-nums w-10 text-right ${pal.text}`}>{fmt(ch.avgViews)}</span>
@@ -180,19 +180,19 @@ function InsightsPanel({ insights }) {
     <div className="space-y-6">
       {/* Niche patterns */}
       <div>
-        <h3 className="text-white text-sm font-semibold mb-3 flex items-center gap-2">
-          <TrendingUp size={14} className="text-violet-400" /> Niche Patterns
+        <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
+          <TrendingUp size={14} className="text-th-accent" /> Niche Patterns
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {insights.nichePatterns?.map((p, i) => (
-            <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+            <div key={i} className="bg-th-surface border border-th-border rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${p.strength === 'strong' ? 'bg-violet-500/15 text-violet-300 border-violet-500/25' : 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
+                <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${p.strength === 'strong' ? 'bg-th-accent/10 text-th-accent border-th-accent/25' : 'bg-th-raised text-th-tx2 border-th-border'}`}>
                   {p.strength}
                 </span>
-                <p className="text-white text-xs font-medium">{p.title}</p>
+                <p className="text-th-tx1 text-xs font-medium">{p.title}</p>
               </div>
-              <p className="text-zinc-400 text-xs leading-relaxed">{p.detail}</p>
+              <p className="text-th-tx2 text-xs leading-relaxed">{p.detail}</p>
             </div>
           ))}
         </div>
@@ -211,7 +211,7 @@ function InsightsPanel({ insights }) {
       {/* Gaps */}
       {insights.gaps?.length > 0 && (
         <div>
-          <h3 className="text-white text-sm font-semibold mb-3 flex items-center gap-2">
+          <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
             <Target size={14} className="text-emerald-400" /> Gaps & Opportunities
           </h3>
           <div className="space-y-3">
@@ -228,16 +228,16 @@ function InsightsPanel({ insights }) {
       {/* New channel playbook */}
       {insights.newChannelPlaybook?.length > 0 && (
         <div>
-          <h3 className="text-white text-sm font-semibold mb-3 flex items-center gap-2">
-            <Sparkles size={14} className="text-violet-400" /> New Channel Playbook
+          <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
+            <Sparkles size={14} className="text-th-accent" /> New Channel Playbook
           </h3>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl divide-y divide-zinc-800">
+          <div className="bg-th-surface border border-th-border rounded-xl divide-y divide-th-border">
             {insights.newChannelPlaybook.map((action, i) => (
               <div key={i} className="flex items-start gap-3 px-4 py-3">
-                <span className="w-5 h-5 rounded-full bg-violet-500/20 border border-violet-500/30 text-violet-400 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                <span className="w-5 h-5 rounded-full bg-th-accent/20 border border-violet-500/30 text-th-accent text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
                   {i + 1}
                 </span>
-                <p className="text-zinc-300 text-sm leading-relaxed">{action}</p>
+                <p className="text-th-tx2 text-sm leading-relaxed">{action}</p>
               </div>
             ))}
           </div>
@@ -326,9 +326,9 @@ export default function Compare({ episodes }) {
   if (totalChannels < 2) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center px-4">
-        <GitCompare size={36} className="text-zinc-800 mb-4" />
-        <p className="text-zinc-400 text-sm font-medium mb-2">Add at least 2 channels to compare</p>
-        <p className="text-zinc-600 text-xs max-w-xs leading-relaxed">
+        <GitCompare size={36} className="text-th-raised mb-4" />
+        <p className="text-th-tx2 text-sm font-medium mb-2">Add at least 2 channels to compare</p>
+        <p className="text-th-tx4 text-xs max-w-xs leading-relaxed">
           Go to the Channels page and add your channel plus competitors or channels in your niche.
         </p>
       </div>
@@ -338,21 +338,21 @@ export default function Compare({ episodes }) {
   return (
     <div className="flex flex-col h-full overflow-auto">
       {/* Header */}
-      <div className="border-b border-zinc-800 px-6 py-4 shrink-0">
+      <div className="border-b border-th-border px-6 py-4 shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-white font-semibold text-lg flex items-center gap-2">
-              <GitCompare size={17} className="text-violet-400" />
+            <h1 className="text-th-tx1 font-semibold text-lg flex items-center gap-2">
+              <GitCompare size={17} className="text-th-accent" />
               Channel Comparison
             </h1>
-            <p className="text-zinc-500 text-xs mt-0.5">
+            <p className="text-th-tx3 text-xs mt-0.5">
               {totalChannels} channels · {totalEpisodes} episodes · {analysedEpisodes} analysed
             </p>
           </div>
           <button
             onClick={handleGenerate}
             disabled={generating || analysedEpisodes < 3}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-th-accent hover:bg-th-accent disabled:opacity-40 disabled:cursor-not-allowed text-th-tx1 text-sm transition-colors"
           >
             {generating
               ? <><Loader2 size={14} className="animate-spin" />Analysing…</>
@@ -378,13 +378,13 @@ export default function Compare({ episodes }) {
         {/* Metrics table */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse min-w-[900px]">
-            <thead className="sticky top-0 bg-zinc-950 z-10">
-              <tr className="border-b border-zinc-800">
+            <thead className="sticky top-0 bg-th-bg z-10">
+              <tr className="border-b border-th-border">
                 {TABLE_COLS.map(col => (
                   <th
                     key={col.key}
                     onClick={() => col.sortable && handleSort(col.key)}
-                    className={`text-left px-4 py-3 text-xs font-medium text-zinc-500 whitespace-nowrap select-none ${col.sortable ? 'cursor-pointer hover:text-zinc-300' : ''}`}
+                    className={`text-left px-4 py-3 text-xs font-medium text-th-tx3 whitespace-nowrap select-none ${col.sortable ? 'cursor-pointer hover:text-th-tx2' : ''}`}
                   >
                     <span className="flex items-center gap-1">
                       {col.label}
@@ -399,40 +399,40 @@ export default function Compare({ episodes }) {
                 const pal = CHANNEL_PALETTE[ch.paletteIdx];
                 const isTop = rowIdx === 0 && sortCol === 'avgViews';
                 return (
-                  <tr key={ch.channelId} className={`border-b border-zinc-800/60 transition-colors ${isTop ? 'bg-violet-500/5' : 'hover:bg-zinc-900/40'}`}>
+                  <tr key={ch.channelId} className={`border-b border-th-border/60 transition-colors ${isTop ? 'bg-th-accent/5' : 'hover:bg-th-surface/40'}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full shrink-0 ${pal.bar}`} />
-                        <span className="text-white text-xs font-medium truncate max-w-[160px]">{ch.name}</span>
-                        {isTop && <span className="text-[10px] text-violet-400 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded-full">Top</span>}
+                        <span className="text-th-tx1 text-xs font-medium truncate max-w-[160px]">{ch.name}</span>
+                        {isTop && <span className="text-[10px] text-th-accent bg-th-accent/10 border border-th-accent/20 px-1.5 py-0.5 rounded-full">Top</span>}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-zinc-400 text-xs tabular-nums">{ch.episodeCount}</td>
+                    <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{ch.episodeCount}</td>
                     <td className={`px-4 py-3 text-xs tabular-nums font-medium ${pal.text}`}>{fmt(ch.avgViews)}</td>
-                    <td className="px-4 py-3 text-zinc-400 text-xs tabular-nums">{fmt(ch.avgLikes)}</td>
-                    <td className="px-4 py-3 text-zinc-400 text-xs tabular-nums">{fmt(ch.avgComments)}</td>
-                    <td className="px-4 py-3 text-zinc-400 text-xs tabular-nums">{pct(ch.engagementRate)}</td>
-                    <td className="px-4 py-3 text-zinc-400 text-xs tabular-nums">{ch.ppm || '—'}</td>
+                    <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{fmt(ch.avgLikes)}</td>
+                    <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{fmt(ch.avgComments)}</td>
+                    <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{pct(ch.engagementRate)}</td>
+                    <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{ch.ppm || '—'}</td>
                     <td className="px-4 py-3">
                       {ch.topFormat ? (
-                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${DIM_COLORS[ch.topFormat] || 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${DIM_COLORS[ch.topFormat] || 'bg-th-raised text-th-tx2 border-th-border'}`}>
                           {DIM_LABELS.format[ch.topFormat] || ch.topFormat}
                         </span>
-                      ) : <span className="text-zinc-700 text-xs">—</span>}
+                      ) : <span className="text-th-tx4 text-xs">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       {ch.topHook ? (
-                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${DIM_COLORS[ch.topHook] || 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${DIM_COLORS[ch.topHook] || 'bg-th-raised text-th-tx2 border-th-border'}`}>
                           {DIM_LABELS.hookType[ch.topHook] || ch.topHook}
                         </span>
-                      ) : <span className="text-zinc-700 text-xs">—</span>}
+                      ) : <span className="text-th-tx4 text-xs">—</span>}
                     </td>
                     <td className="px-4 py-3">
                       {ch.topContent ? (
-                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${DIM_COLORS[ch.topContent] || 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${DIM_COLORS[ch.topContent] || 'bg-th-raised text-th-tx2 border-th-border'}`}>
                           {DIM_LABELS.contentType[ch.topContent] || ch.topContent}
                         </span>
-                      ) : <span className="text-zinc-700 text-xs">—</span>}
+                      ) : <span className="text-th-tx4 text-xs">—</span>}
                     </td>
                   </tr>
                 );
@@ -443,9 +443,9 @@ export default function Compare({ episodes }) {
 
         {/* Dimension comparison charts */}
         {analysedEpisodes >= 2 && (
-          <div className="px-6 py-8 border-t border-zinc-800">
-            <h2 className="text-white font-semibold text-base mb-1">Performance by Dimension</h2>
-            <p className="text-zinc-500 text-xs mb-6">Average views for each dimension value, broken down by channel.</p>
+          <div className="px-6 py-8 border-t border-th-border">
+            <h2 className="text-th-tx1 font-semibold text-base mb-1">Performance by Dimension</h2>
+            <p className="text-th-tx3 text-xs mb-6">Average views for each dimension value, broken down by channel.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <DimCompare title="Format" dimKey="format" channelStats={channelStats} />
               <DimCompare title="Hook Type" dimKey="hookType" channelStats={channelStats} />
@@ -466,16 +466,16 @@ export default function Compare({ episodes }) {
         )}
 
         {insights && (
-          <div className="px-6 pb-10 border-t border-zinc-800 pt-8">
-            <h2 className="text-white font-semibold text-base mb-1">AI Cross-Channel Analysis</h2>
-            <p className="text-zinc-500 text-xs mb-6">Patterns, gaps, and a playbook for entering or winning in this niche.</p>
+          <div className="px-6 pb-10 border-t border-th-border pt-8">
+            <h2 className="text-th-tx1 font-semibold text-base mb-1">AI Cross-Channel Analysis</h2>
+            <p className="text-th-tx3 text-xs mb-6">Patterns, gaps, and a playbook for entering or winning in this niche.</p>
             <InsightsPanel insights={insights} />
           </div>
         )}
 
         {analysedEpisodes < 3 && (
-          <div className="px-6 py-8 border-t border-zinc-800">
-            <div className="flex items-start gap-3 text-zinc-500 text-sm">
+          <div className="px-6 py-8 border-t border-th-border">
+            <div className="flex items-start gap-3 text-th-tx3 text-sm">
               <AlertCircle size={15} className="shrink-0 mt-0.5 text-amber-500" />
               Analyse at least 3 episodes across your channels (on the Intelligence page) to unlock the AI cross-channel analysis.
             </div>

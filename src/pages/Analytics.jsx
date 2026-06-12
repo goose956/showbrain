@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { apiFetch } from '../lib/api';
 import { LineChart, RefreshCw, ExternalLink, MessageSquare, Briefcase, Camera, Mail, TrendingUp, MousePointerClick, Link2, AlertCircle } from 'lucide-react';
 
 // ── constants ─────────────────────────────────────────────────────────────────
@@ -91,20 +92,20 @@ function Sparkline({ data, color = '#8b5cf6', height = 40 }) {
 // ── bar chart ─────────────────────────────────────────────────────────────────
 
 function BarChart({ data, colorClass }) {
-  if (!data.length) return <p className="text-zinc-600 text-xs py-4">No data</p>;
+  if (!data.length) return <p className="text-th-tx4 text-xs py-4">No data</p>;
   const max = Math.max(...data.map(d => d.value), 1);
   return (
     <div className="space-y-2">
       {data.map(({ label, value }) => (
         <div key={label} className="flex items-center gap-3">
-          <span className="text-zinc-500 text-xs w-28 truncate shrink-0">{label}</span>
-          <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+          <span className="text-th-tx3 text-xs w-28 truncate shrink-0">{label}</span>
+          <div className="flex-1 h-1.5 bg-th-raised rounded-full overflow-hidden">
             <div
               className={`h-full ${colorClass} rounded-full transition-all`}
               style={{ width: `${(value / max) * 100}%` }}
             />
           </div>
-          <span className="text-zinc-400 text-xs tabular-nums w-6 text-right">{value}</span>
+          <span className="text-th-tx2 text-xs tabular-nums w-6 text-right">{value}</span>
         </div>
       ))}
     </div>
@@ -122,29 +123,29 @@ function PlatformBreakdown({ clicks }) {
   const total = clicks.length || 1;
   const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
 
-  if (!sorted.length) return <p className="text-zinc-600 text-xs py-8 text-center">No click data yet</p>;
+  if (!sorted.length) return <p className="text-th-tx4 text-xs py-8 text-center">No click data yet</p>;
 
   return (
     <div className="space-y-3">
       {sorted.map(([platform, count]) => {
-        const meta = PLATFORM_META[platform] || { label: platform, color: 'bg-zinc-500', badge: 'bg-zinc-800 border-zinc-700 text-zinc-400' };
+        const meta = PLATFORM_META[platform] || { label: platform, color: 'bg-th-tx3', badge: 'bg-th-raised border-th-border text-th-tx2' };
         const Icon = meta.icon;
         const pct = Math.round((count / total) * 100);
         return (
           <div key={platform}>
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-2">
-                {Icon && <Icon size={13} className={meta.text || 'text-zinc-400'} />}
-                <span className="text-zinc-300 text-xs font-medium">{meta.label || platform}</span>
+                {Icon && <Icon size={13} className={meta.text || 'text-th-tx2'} />}
+                <span className="text-th-tx2 text-xs font-medium">{meta.label || platform}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-zinc-500 text-xs tabular-nums">{pct}%</span>
+                <span className="text-th-tx3 text-xs tabular-nums">{pct}%</span>
                 <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${meta.badge}`}>
                   {count} click{count !== 1 ? 's' : ''}
                 </span>
               </div>
             </div>
-            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-th-raised rounded-full overflow-hidden">
               <div className={`h-full ${meta.color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
             </div>
           </div>
@@ -165,32 +166,32 @@ function TopPosts({ clicks }) {
     if (!meta[c.postId]) meta[c.postId] = { episodeTitle: c.episodeTitle, platform: c.platform, youtubeUrl: c.youtubeUrl };
   }
   const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  if (!sorted.length) return <p className="text-zinc-600 text-xs py-8 text-center">No click data yet</p>;
+  if (!sorted.length) return <p className="text-th-tx4 text-xs py-8 text-center">No click data yet</p>;
 
   return (
-    <div className="divide-y divide-zinc-800/60">
+    <div className="divide-y divide-th-border/60">
       {sorted.map(([postId, count], i) => {
         const m = meta[postId] || {};
         const pm = PLATFORM_META[m.platform] || {};
         const Icon = pm.icon;
         return (
           <div key={postId} className="flex items-center gap-3 py-3 px-1">
-            <span className="text-zinc-700 text-xs tabular-nums w-5 text-right shrink-0">{i + 1}</span>
+            <span className="text-th-tx4 text-xs tabular-nums w-5 text-right shrink-0">{i + 1}</span>
             <div className="flex-1 min-w-0">
-              <p className="text-zinc-300 text-xs truncate">{m.episodeTitle || postId}</p>
+              <p className="text-th-tx2 text-xs truncate">{m.episodeTitle || postId}</p>
               {m.platform && (
                 <div className="flex items-center gap-1 mt-0.5">
-                  {Icon && <Icon size={10} className={pm.text || 'text-zinc-500'} />}
-                  <span className="text-zinc-600 text-[11px]">{pm.label || m.platform}</span>
+                  {Icon && <Icon size={10} className={pm.text || 'text-th-tx3'} />}
+                  <span className="text-th-tx4 text-[11px]">{pm.label || m.platform}</span>
                 </div>
               )}
             </div>
             {m.youtubeUrl && (
-              <a href={m.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-zinc-700 hover:text-zinc-400 shrink-0">
+              <a href={m.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-th-tx4 hover:text-th-tx2 shrink-0">
                 <ExternalLink size={12} />
               </a>
             )}
-            <span className="text-zinc-400 text-xs tabular-nums font-medium shrink-0">{count}</span>
+            <span className="text-th-tx2 text-xs tabular-nums font-medium shrink-0">{count}</span>
           </div>
         );
       })}
@@ -209,7 +210,7 @@ function TopEpisodes({ clicks }) {
     if (c.youtubeUrl) urls[c.episodeTitle] = c.youtubeUrl;
   }
   const data = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([label, value]) => ({ label, value }));
-  return <BarChart data={data} colorClass="bg-violet-500" />;
+  return <BarChart data={data} colorClass="bg-th-accent" />;
 }
 
 // ── main ──────────────────────────────────────────────────────────────────────
@@ -224,7 +225,7 @@ export default function Analytics() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/clicks');
+      const res = await apiFetch('/api/clicks');
       if (!res.ok) throw new Error(await res.text());
       setClicks(await res.json());
     } catch (e) {
@@ -250,23 +251,23 @@ export default function Analytics() {
   return (
     <div className="flex flex-col h-full overflow-auto">
       {/* Header */}
-      <div className="border-b border-zinc-800 px-6 py-4 shrink-0">
+      <div className="border-b border-th-border px-6 py-4 shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-white font-semibold text-lg flex items-center gap-2">
-              <LineChart size={17} className="text-violet-400" />
+            <h1 className="text-th-tx1 font-semibold text-lg flex items-center gap-2">
+              <LineChart size={17} className="text-th-accent" />
               Analytics
             </h1>
-            <p className="text-zinc-500 text-xs mt-0.5">Track which platforms are driving YouTube views</p>
+            <p className="text-th-tx3 text-xs mt-0.5">Track which platforms are driving YouTube views</p>
           </div>
           <div className="flex items-center gap-2">
             {/* Range selector */}
-            <div className="flex gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
+            <div className="flex gap-1 bg-th-surface border border-th-border rounded-lg p-1">
               {RANGE_OPTIONS.map(opt => (
                 <button
                   key={opt.id}
                   onClick={() => setRange(opt.id)}
-                  className={`px-3 py-1 rounded-md text-xs transition-colors ${range === opt.id ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  className={`px-3 py-1 rounded-md text-xs transition-colors ${range === opt.id ? 'bg-th-border text-th-tx1' : 'text-th-tx3 hover:text-th-tx2'}`}
                 >
                   {opt.label}
                 </button>
@@ -275,7 +276,7 @@ export default function Analytics() {
             <button
               onClick={fetchClicks}
               disabled={loading}
-              className="p-2 rounded-lg border border-zinc-800 text-zinc-500 hover:text-white hover:border-zinc-700 transition-colors disabled:opacity-40"
+              className="p-2 rounded-lg border border-th-border text-th-tx3 hover:text-th-tx1 hover:border-th-border transition-colors disabled:opacity-40"
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             </button>
@@ -293,41 +294,41 @@ export default function Analytics() {
       <div className="flex-1 overflow-auto px-6 py-6 space-y-6">
         {/* Stat cards */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+          <div className="bg-th-surface border border-th-border rounded-xl p-5">
             <div className="flex items-center gap-2 mb-3">
-              <MousePointerClick size={14} className="text-violet-400" />
-              <p className="text-zinc-500 text-xs font-medium">Total Clicks</p>
+              <MousePointerClick size={14} className="text-th-accent" />
+              <p className="text-th-tx3 text-xs font-medium">Total Clicks</p>
             </div>
-            <p className="text-white text-2xl font-bold tabular-nums">{totalClicks}</p>
-            <p className="text-zinc-600 text-xs mt-1">tracked link clicks</p>
+            <p className="text-th-tx1 text-2xl font-bold tabular-nums">{totalClicks}</p>
+            <p className="text-th-tx4 text-xs mt-1">tracked link clicks</p>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+          <div className="bg-th-surface border border-th-border rounded-xl p-5">
             <div className="flex items-center gap-2 mb-3">
               <Link2 size={14} className="text-sky-400" />
-              <p className="text-zinc-500 text-xs font-medium">Posts Tracked</p>
+              <p className="text-th-tx3 text-xs font-medium">Posts Tracked</p>
             </div>
-            <p className="text-white text-2xl font-bold tabular-nums">{uniquePosts}</p>
-            <p className="text-zinc-600 text-xs mt-1">posts with tracking links</p>
+            <p className="text-th-tx1 text-2xl font-bold tabular-nums">{uniquePosts}</p>
+            <p className="text-th-tx4 text-xs mt-1">posts with tracking links</p>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+          <div className="bg-th-surface border border-th-border rounded-xl p-5">
             <div className="flex items-center gap-2 mb-3">
               <TrendingUp size={14} className="text-emerald-400" />
-              <p className="text-zinc-500 text-xs font-medium">Top Platform</p>
+              <p className="text-th-tx3 text-xs font-medium">Top Platform</p>
             </div>
             {topPlatform ? (
               <>
-                <p className="text-white text-2xl font-bold capitalize">{PLATFORM_META[topPlatform]?.label || topPlatform}</p>
-                <p className="text-zinc-600 text-xs mt-1">most clicks in period</p>
+                <p className="text-th-tx1 text-2xl font-bold capitalize">{PLATFORM_META[topPlatform]?.label || topPlatform}</p>
+                <p className="text-th-tx4 text-xs mt-1">most clicks in period</p>
               </>
             ) : (
-              <p className="text-zinc-600 text-sm">No data yet</p>
+              <p className="text-th-tx4 text-sm">No data yet</p>
             )}
           </div>
         </div>
 
         {/* Clicks over time */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-          <p className="text-white text-sm font-semibold mb-4">Clicks over time</p>
+        <div className="bg-th-surface border border-th-border rounded-xl p-5">
+          <p className="text-th-tx1 text-sm font-semibold mb-4">Clicks over time</p>
           {dailySeries.length > 1 ? (
             <div className="overflow-x-auto">
               <div className="flex items-end gap-1 min-w-[500px] h-28">
@@ -339,7 +340,7 @@ export default function Analytics() {
                     <div key={date} className="flex-1 flex flex-col items-center gap-1 group" title={`${date}: ${count} click${count !== 1 ? 's' : ''}`}>
                       <div className="w-full rounded-t relative" style={{ height: '100px' }}>
                         <div
-                          className={`absolute bottom-0 w-full rounded-t transition-all ${isToday ? 'bg-violet-500' : 'bg-violet-500/40 group-hover:bg-violet-500/60'}`}
+                          className={`absolute bottom-0 w-full rounded-t transition-all ${isToday ? 'bg-th-accent' : 'bg-th-accent/40 group-hover:bg-th-accent/60'}`}
                           style={{ height: `${Math.max(h, count > 0 ? 4 : 0)}%` }}
                         />
                       </div>
@@ -347,48 +348,48 @@ export default function Analytics() {
                   );
                 })}
               </div>
-              <div className="flex justify-between mt-2 text-[10px] text-zinc-700 min-w-[500px]">
+              <div className="flex justify-between mt-2 text-[10px] text-th-tx4 min-w-[500px]">
                 <span>{dailySeries[0]?.date}</span>
                 <span>{dailySeries[dailySeries.length - 1]?.date}</span>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-10 text-zinc-700">
+            <div className="flex flex-col items-center justify-center py-10 text-th-tx4">
               <MousePointerClick size={28} className="mb-3 opacity-30" />
               <p className="text-sm">No click data in this period</p>
-              <p className="text-xs mt-1 text-zinc-800">Generate a tracking link in Post Queue and share it to start tracking</p>
+              <p className="text-xs mt-1 text-th-tx4">Generate a tracking link in Post Queue and share it to start tracking</p>
             </div>
           )}
         </div>
 
         {/* Bottom grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-            <p className="text-white text-sm font-semibold mb-4">Platform breakdown</p>
+          <div className="bg-th-surface border border-th-border rounded-xl p-5">
+            <p className="text-th-tx1 text-sm font-semibold mb-4">Platform breakdown</p>
             <PlatformBreakdown clicks={filtered} />
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-            <p className="text-white text-sm font-semibold mb-4">Top posts by clicks</p>
+          <div className="bg-th-surface border border-th-border rounded-xl p-5">
+            <p className="text-th-tx1 text-sm font-semibold mb-4">Top posts by clicks</p>
             <TopPosts clicks={filtered} />
           </div>
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-          <p className="text-white text-sm font-semibold mb-4">Top episodes by social traffic</p>
+        <div className="bg-th-surface border border-th-border rounded-xl p-5">
+          <p className="text-th-tx1 text-sm font-semibold mb-4">Top episodes by social traffic</p>
           <TopEpisodes clicks={filtered} />
         </div>
 
         {/* How it works */}
         {totalClicks === 0 && !loading && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-            <p className="text-white text-sm font-semibold mb-3 flex items-center gap-2">
-              <Link2 size={14} className="text-violet-400" /> How tracking links work
+          <div className="bg-th-surface border border-th-border rounded-xl p-6">
+            <p className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
+              <Link2 size={14} className="text-th-accent" /> How tracking links work
             </p>
-            <ol className="space-y-2.5 text-zinc-400 text-sm">
-              <li className="flex gap-3"><span className="text-violet-400 font-semibold shrink-0">1.</span>Go to Post Queue and open any post that has a YouTube episode linked.</li>
-              <li className="flex gap-3"><span className="text-violet-400 font-semibold shrink-0">2.</span>Click <strong className="text-zinc-300">Track link</strong> — this generates a short redirect URL through ShowBrain.</li>
-              <li className="flex gap-3"><span className="text-violet-400 font-semibold shrink-0">3.</span>Click <strong className="text-zinc-300">Copy tracked</strong> and paste that URL into your tweet, LinkedIn post, or newsletter instead of the raw YouTube link.</li>
-              <li className="flex gap-3"><span className="text-violet-400 font-semibold shrink-0">4.</span>Every time someone clicks it, ShowBrain logs the click and redirects them to YouTube. You see which platform is driving views here.</li>
+            <ol className="space-y-2.5 text-th-tx2 text-sm">
+              <li className="flex gap-3"><span className="text-th-accent font-semibold shrink-0">1.</span>Go to Post Queue and open any post that has a YouTube episode linked.</li>
+              <li className="flex gap-3"><span className="text-th-accent font-semibold shrink-0">2.</span>Click <strong className="text-th-tx2">Track link</strong> — this generates a short redirect URL through ShowBrain.</li>
+              <li className="flex gap-3"><span className="text-th-accent font-semibold shrink-0">3.</span>Click <strong className="text-th-tx2">Copy tracked</strong> and paste that URL into your tweet, LinkedIn post, or newsletter instead of the raw YouTube link.</li>
+              <li className="flex gap-3"><span className="text-th-accent font-semibold shrink-0">4.</span>Every time someone clicks it, ShowBrain logs the click and redirects them to YouTube. You see which platform is driving views here.</li>
             </ol>
           </div>
         )}

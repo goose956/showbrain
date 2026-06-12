@@ -15,7 +15,7 @@ const LABELS = {
 const DIM_COLORS = {
   // formats
   solo: 'bg-sky-500/10 text-sky-300 border-sky-500/20',
-  interview: 'bg-violet-500/10 text-violet-300 border-violet-500/20',
+  interview: 'bg-th-accent/10 text-th-accent border-th-accent/20',
   'co-hosted': 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
   panel: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
   narrative: 'bg-pink-500/10 text-pink-300 border-pink-500/20',
@@ -36,7 +36,7 @@ const DIM_COLORS = {
 };
 
 const chip = (val) => {
-  const color = DIM_COLORS[val] || 'bg-zinc-700/40 text-zinc-300 border-zinc-600/30';
+  const color = DIM_COLORS[val] || 'bg-th-border/40 text-th-tx2 border-th-border/30';
   return (
     <span className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded-full border ${color}`}>
       {val}
@@ -77,21 +77,21 @@ function InsightChart({ title, dimKey, episodes, metric, formatValue }) {
   const { rows, max } = buildInsight(episodes, dimKey, metric);
   if (!rows.length) return null;
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-      <p className="text-white text-sm font-semibold mb-4">{title}</p>
+    <div className="bg-th-surface border border-th-border rounded-xl p-5">
+      <p className="text-th-tx1 text-sm font-semibold mb-4">{title}</p>
       <div className="space-y-3">
         {rows.map(({ val, avg: a, count }) => (
           <div key={val}>
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
                 {chip(val)}
-                <span className="text-zinc-500 text-[11px]">×{count}</span>
+                <span className="text-th-tx3 text-[11px]">×{count}</span>
               </div>
-              <span className="text-white text-xs font-medium">{formatValue(a)}</span>
+              <span className="text-th-tx1 text-xs font-medium">{formatValue(a)}</span>
             </div>
-            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-th-raised rounded-full overflow-hidden">
               <div
-                className="h-full bg-violet-500 rounded-full transition-all"
+                className="h-full bg-th-accent rounded-full transition-all"
                 style={{ width: `${(a / max) * 100}%` }}
               />
             </div>
@@ -103,8 +103,8 @@ function InsightChart({ title, dimKey, episodes, metric, formatValue }) {
 }
 
 function SortIcon({ col, sortCol, sortDir }) {
-  if (col !== sortCol) return <ChevronsUpDown size={12} className="text-zinc-600" />;
-  return sortDir === 'asc' ? <ChevronUp size={12} className="text-violet-400" /> : <ChevronDown size={12} className="text-violet-400" />;
+  if (col !== sortCol) return <ChevronsUpDown size={12} className="text-th-tx4" />;
+  return sortDir === 'asc' ? <ChevronUp size={12} className="text-th-accent" /> : <ChevronDown size={12} className="text-th-accent" />;
 }
 
 // ─── main ──────────────────────────────────────────────────────────────────────
@@ -240,11 +240,11 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="border-b border-zinc-800 px-6 py-4 shrink-0">
+      <div className="border-b border-th-border px-6 py-4 shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 className="text-white font-semibold text-lg">Episode Intelligence</h1>
-            <p className="text-zinc-500 text-xs mt-0.5">
+            <h1 className="text-th-tx1 font-semibold text-lg">Episode Intelligence</h1>
+            <p className="text-th-tx3 text-xs mt-0.5">
               Claude extracts every dimension from transcript — no manual tagging.
               {episodesWithDims.length < channelEpisodes.length && (
                 <span className="text-amber-400 ml-2">{channelEpisodes.length - episodesWithDims.length} not yet analysed.</span>
@@ -252,7 +252,7 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
             </p>
           </div>
           {hasFilters && (
-            <button onClick={clearFilters} className="text-xs text-zinc-500 hover:text-white transition-colors">
+            <button onClick={clearFilters} className="text-xs text-th-tx3 hover:text-th-tx1 transition-colors">
               Clear filters
             </button>
           )}
@@ -265,12 +265,12 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
               onClick={() => handleChannelChange('all')}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
                 selectedChannel === 'all'
-                  ? 'bg-zinc-700 text-white border-zinc-600'
-                  : 'text-zinc-500 border-zinc-800 hover:text-white hover:border-zinc-700'
+                  ? 'bg-th-border text-th-tx1 border-th-border'
+                  : 'text-th-tx3 border-th-border hover:text-th-tx1 hover:border-th-border'
               }`}
             >
               All channels
-              <span className="ml-1.5 text-zinc-500 font-normal">{episodes.length}</span>
+              <span className="ml-1.5 text-th-tx3 font-normal">{episodes.length}</span>
             </button>
             {channels.map(ch => {
               const count = episodes.filter(e => e.channelId === ch.id).length;
@@ -281,12 +281,12 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
                   onClick={() => handleChannelChange(ch.id)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
                     isActive
-                      ? 'bg-violet-600 text-white border-violet-500'
-                      : 'text-zinc-500 border-zinc-800 hover:text-white hover:border-zinc-700'
+                      ? 'bg-th-accent text-th-tx1 border-violet-500'
+                      : 'text-th-tx3 border-th-border hover:text-th-tx1 hover:border-th-border'
                   }`}
                 >
                   {ch.name}
-                  <span className={`ml-1.5 font-normal ${isActive ? 'text-violet-300' : 'text-zinc-600'}`}>{count}</span>
+                  <span className={`ml-1.5 font-normal ${isActive ? 'text-th-accent' : 'text-th-tx4'}`}>{count}</span>
                 </button>
               );
             })}
@@ -306,15 +306,15 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
                     onClick={() => toggleFilter(dim, val)}
                     className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-all ${
                       active
-                        ? (DIM_COLORS[val] || 'bg-violet-500/20 text-violet-300 border-violet-500/40') + ' opacity-100'
-                        : 'bg-zinc-900 text-zinc-500 border-zinc-700 hover:text-zinc-300 hover:border-zinc-600'
+                        ? (DIM_COLORS[val] || 'bg-th-accent/20 text-th-accent border-violet-500/40') + ' opacity-100'
+                        : 'bg-th-surface text-th-tx3 border-th-border hover:text-th-tx2 hover:border-th-border'
                     }`}
                   >
                     {val}
                   </button>
                 );
               })}
-              {filterOptions[dim].length > 0 && <span className="text-zinc-700 text-xs">·</span>}
+              {filterOptions[dim].length > 0 && <span className="text-th-tx4 text-xs">·</span>}
             </div>
           ))}
         </div>
@@ -323,14 +323,14 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
       <div className="flex-1 overflow-auto">
         {/* Episode matrix table */}
         <table className="w-full text-sm border-collapse min-w-[900px]">
-          <thead className="sticky top-0 bg-zinc-950 z-10">
-            <tr className="border-b border-zinc-800">
+          <thead className="sticky top-0 bg-th-bg z-10">
+            <tr className="border-b border-th-border">
               {COLUMNS.map((col) => (
                 <th
                   key={col.key}
                   onClick={() => col.sortable && handleSort(col.key)}
-                  className={`text-left px-4 py-3 text-xs font-medium text-zinc-500 whitespace-nowrap select-none ${
-                    col.sortable ? 'cursor-pointer hover:text-zinc-300' : ''
+                  className={`text-left px-4 py-3 text-xs font-medium text-th-tx3 whitespace-nowrap select-none ${
+                    col.sortable ? 'cursor-pointer hover:text-th-tx2' : ''
                   }`}
                 >
                   <span className="flex items-center gap-1">
@@ -344,7 +344,7 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
           <tbody>
             {visible.length === 0 && (
               <tr>
-                <td colSpan={COLUMNS.length} className="text-center text-zinc-600 text-sm py-16">
+                <td colSpan={COLUMNS.length} className="text-center text-th-tx4 text-sm py-16">
                   No episodes match the current filters.
                 </td>
               </tr>
@@ -353,36 +353,36 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
               const d = ep.dimensions;
               const isAnalysing = analysing[ep.id];
               return (
-                <tr key={ep.id} className="border-b border-zinc-800/60 hover:bg-zinc-900/40 transition-colors">
+                <tr key={ep.id} className="border-b border-th-border/60 hover:bg-th-surface/40 transition-colors">
                   <td className="px-4 py-3 max-w-[220px]">
-                    <p className="text-white text-xs font-medium truncate">{ep.title}</p>
-                    <p className="text-zinc-600 text-[11px]">{ep.publishedAt}</p>
+                    <p className="text-th-tx1 text-xs font-medium truncate">{ep.title}</p>
+                    <p className="text-th-tx4 text-[11px]">{ep.publishedAt}</p>
                   </td>
-                  <td className="px-4 py-3">{d ? chip(d.format) : <span className="text-zinc-700 text-xs">—</span>}</td>
-                  <td className="px-4 py-3">{d ? chip(d.hookType) : <span className="text-zinc-700 text-xs">—</span>}</td>
-                  <td className="px-4 py-3">{d ? chip(d.contentType) : <span className="text-zinc-700 text-xs">—</span>}</td>
-                  <td className="px-4 py-3">{d ? chip(d.emotionalTone) : <span className="text-zinc-700 text-xs">—</span>}</td>
+                  <td className="px-4 py-3">{d ? chip(d.format) : <span className="text-th-tx4 text-xs">—</span>}</td>
+                  <td className="px-4 py-3">{d ? chip(d.hookType) : <span className="text-th-tx4 text-xs">—</span>}</td>
+                  <td className="px-4 py-3">{d ? chip(d.contentType) : <span className="text-th-tx4 text-xs">—</span>}</td>
+                  <td className="px-4 py-3">{d ? chip(d.emotionalTone) : <span className="text-th-tx4 text-xs">—</span>}</td>
                   <td className="px-4 py-3">
                     {d ? (
-                      <span className="text-zinc-300 text-xs bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-700">{d.topicCluster}</span>
-                    ) : <span className="text-zinc-700 text-xs">—</span>}
+                      <span className="text-th-tx2 text-xs bg-th-raised px-2 py-0.5 rounded-full border border-th-border">{d.topicCluster}</span>
+                    ) : <span className="text-th-tx4 text-xs">—</span>}
                   </td>
-                  <td className="px-4 py-3 text-zinc-300 text-xs tabular-nums">{ep.viewCount ? formatNum(ep.viewCount) : <span className="text-zinc-700">—</span>}</td>
-                  <td className="px-4 py-3 text-zinc-300 text-xs tabular-nums">{ep.likeCount ? formatNum(ep.likeCount) : <span className="text-zinc-700">—</span>}</td>
-                  <td className="px-4 py-3 text-zinc-300 text-xs tabular-nums">{ep.commentCount ? formatNum(ep.commentCount) : <span className="text-zinc-700">—</span>}</td>
+                  <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{ep.viewCount ? formatNum(ep.viewCount) : <span className="text-th-tx4">—</span>}</td>
+                  <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{ep.likeCount ? formatNum(ep.likeCount) : <span className="text-th-tx4">—</span>}</td>
+                  <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{ep.commentCount ? formatNum(ep.commentCount) : <span className="text-th-tx4">—</span>}</td>
                   <td className="px-4 py-3">
                     {d ? (
                       d.titleLengthOk
                         ? <CheckCircle2 size={14} className="text-emerald-400" />
                         : <XCircle size={14} className="text-red-400" />
-                    ) : <span className="text-zinc-700 text-xs">—</span>}
+                    ) : <span className="text-th-tx4 text-xs">—</span>}
                   </td>
                   <td className="px-4 py-3">
                     {!d && (
                       <button
                         onClick={() => handleAnalyse(ep)}
                         disabled={isAnalysing}
-                        className="flex items-center gap-1.5 text-[11px] text-violet-400 hover:text-violet-300 disabled:opacity-50 transition-colors whitespace-nowrap"
+                        className="flex items-center gap-1.5 text-[11px] text-th-accent hover:text-th-accent disabled:opacity-50 transition-colors whitespace-nowrap"
                       >
                         {isAnalysing
                           ? <><Loader2 size={11} className="animate-spin" />Analysing…</>
@@ -398,20 +398,20 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-3 border-t border-zinc-800 bg-zinc-950">
-            <p className="text-zinc-600 text-xs tabular-nums">
+          <div className="flex items-center justify-between px-6 py-3 border-t border-th-border bg-th-bg">
+            <p className="text-th-tx4 text-xs tabular-nums">
               {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, visible.length)} of {visible.length} episodes
             </p>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setPage(1)}
                 disabled={safePage === 1}
-                className="px-2 py-1 rounded text-xs text-zinc-500 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="px-2 py-1 rounded text-xs text-th-tx3 hover:text-th-tx1 hover:bg-th-raised disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >«</button>
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={safePage === 1}
-                className="px-2 py-1 rounded text-xs text-zinc-500 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="px-2 py-1 rounded text-xs text-th-tx3 hover:text-th-tx1 hover:bg-th-raised disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >‹</button>
 
               {/* Page number pills */}
@@ -424,15 +424,15 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
                 }, [])
                 .map((n, i) =>
                   n === '…' ? (
-                    <span key={`ellipsis-${i}`} className="px-1 text-zinc-700 text-xs">…</span>
+                    <span key={`ellipsis-${i}`} className="px-1 text-th-tx4 text-xs">…</span>
                   ) : (
                     <button
                       key={n}
                       onClick={() => setPage(n)}
                       className={`w-7 h-7 rounded text-xs transition-colors ${
                         safePage === n
-                          ? 'bg-violet-600 text-white'
-                          : 'text-zinc-500 hover:text-white hover:bg-zinc-800'
+                          ? 'bg-th-accent text-th-tx1'
+                          : 'text-th-tx3 hover:text-th-tx1 hover:bg-th-raised'
                       }`}
                     >{n}</button>
                   )
@@ -441,12 +441,12 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={safePage === totalPages}
-                className="px-2 py-1 rounded text-xs text-zinc-500 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="px-2 py-1 rounded text-xs text-th-tx3 hover:text-th-tx1 hover:bg-th-raised disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >›</button>
               <button
                 onClick={() => setPage(totalPages)}
                 disabled={safePage === totalPages}
-                className="px-2 py-1 rounded text-xs text-zinc-500 hover:text-white hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="px-2 py-1 rounded text-xs text-th-tx3 hover:text-th-tx1 hover:bg-th-raised disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >»</button>
             </div>
           </div>
@@ -454,18 +454,18 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
 
         {/* What works for your show */}
         {episodesWithDims.length >= 2 && (
-          <div className="px-6 py-8 border-t border-zinc-800">
+          <div className="px-6 py-8 border-t border-th-border">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-white font-semibold text-base">What works for your show</h2>
-                <p className="text-zinc-500 text-xs mt-0.5">Based on your {episodesWithDims.length} analysed episodes — not industry averages.</p>
+                <h2 className="text-th-tx1 font-semibold text-base">What works for your show</h2>
+                <p className="text-th-tx3 text-xs mt-0.5">Based on your {episodesWithDims.length} analysed episodes — not industry averages.</p>
               </div>
-              <div className="flex gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
+              <div className="flex gap-1 bg-th-surface border border-th-border rounded-lg p-1">
                 {[['viewCount', 'Views'], ['likeCount', 'Likes'], ['commentCount', 'Comments']].map(([key, label]) => (
                   <button
                     key={key}
                     onClick={() => setMetric(key)}
-                    className={`text-xs px-3 py-1.5 rounded-md transition-colors ${metric === key ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`text-xs px-3 py-1.5 rounded-md transition-colors ${metric === key ? 'bg-th-border text-th-tx1' : 'text-th-tx3 hover:text-th-tx2'}`}
                   >
                     {label}
                   </button>
@@ -496,8 +496,8 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
         )}
 
         {episodesWithDims.length < 2 && episodesWithDims.length > 0 && (
-          <div className="px-6 py-8 border-t border-zinc-800">
-            <div className="flex items-start gap-3 text-zinc-500 text-sm">
+          <div className="px-6 py-8 border-t border-th-border">
+            <div className="flex items-start gap-3 text-th-tx3 text-sm">
               <AlertCircle size={16} className="shrink-0 mt-0.5 text-amber-500" />
               Analyse at least 2 episodes to unlock the "What works for your show" insights.
             </div>
@@ -506,21 +506,21 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
 
         {/* AI Tactical Insights */}
         {episodesWithDims.length >= 3 && (
-          <div className="px-6 py-8 border-t border-zinc-800">
+          <div className="px-6 py-8 border-t border-th-border">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-white font-semibold text-base flex items-center gap-2">
-                  <TrendingUp size={16} className="text-violet-400" />
+                <h2 className="text-th-tx1 font-semibold text-base flex items-center gap-2">
+                  <TrendingUp size={16} className="text-th-accent" />
                   Tactical Recommendations
                 </h2>
-                <p className="text-zinc-500 text-xs mt-0.5">
+                <p className="text-th-tx3 text-xs mt-0.5">
                   Claude analyses your patterns and tells you exactly what to do next.
                 </p>
               </div>
               <button
                 onClick={handleGenerateInsights}
                 disabled={generatingInsights}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-th-accent hover:bg-th-accent disabled:opacity-50 disabled:cursor-not-allowed text-th-tx1 text-sm transition-colors"
               >
                 {generatingInsights
                   ? <><Loader2 size={14} className="animate-spin" />Analysing…</>
@@ -531,23 +531,23 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
             {insights && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {insights.map((insight, i) => (
-                  <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+                  <div key={i} className="bg-th-surface border border-th-border rounded-xl p-5">
                     <div className="flex items-start justify-between gap-3 mb-3">
-                      <h3 className="text-white text-sm font-semibold leading-snug">{insight.title}</h3>
+                      <h3 className="text-th-tx1 text-sm font-semibold leading-snug">{insight.title}</h3>
                       <span className={`shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full border ${
                         insight.impact === 'high'
                           ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                           : insight.impact === 'medium'
                           ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                          : 'bg-zinc-700/40 text-zinc-400 border-zinc-600/30'
+                          : 'bg-th-border/40 text-th-tx2 border-th-border/30'
                       }`}>
                         {insight.impact} impact
                       </span>
                     </div>
-                    <p className="text-zinc-400 text-xs leading-relaxed mb-3">{insight.finding}</p>
-                    <div className="flex items-start gap-2 bg-violet-500/10 border border-violet-500/20 rounded-lg p-3">
-                      <Zap size={12} className="text-violet-400 shrink-0 mt-0.5" />
-                      <p className="text-violet-300 text-xs leading-relaxed">{insight.action}</p>
+                    <p className="text-th-tx2 text-xs leading-relaxed mb-3">{insight.finding}</p>
+                    <div className="flex items-start gap-2 bg-th-accent/10 border border-th-accent/20 rounded-lg p-3">
+                      <Zap size={12} className="text-th-accent shrink-0 mt-0.5" />
+                      <p className="text-th-accent text-xs leading-relaxed">{insight.action}</p>
                     </div>
                   </div>
                 ))}
@@ -555,9 +555,9 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
             )}
 
             {!insights && !generatingInsights && (
-              <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 text-center">
-                <Sparkles size={20} className="text-zinc-600 mx-auto mb-2" />
-                <p className="text-zinc-500 text-sm">Click Generate Insights to get Claude's tactical recommendations based on your {episodesWithDims.length} analysed episodes.</p>
+              <div className="bg-th-surface/50 border border-th-border rounded-xl p-6 text-center">
+                <Sparkles size={20} className="text-th-tx4 mx-auto mb-2" />
+                <p className="text-th-tx3 text-sm">Click Generate Insights to get Claude's tactical recommendations based on your {episodesWithDims.length} analysed episodes.</p>
               </div>
             )}
           </div>

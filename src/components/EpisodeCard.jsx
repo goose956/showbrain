@@ -3,7 +3,7 @@ import { Clock, Headphones, Share2, Tag } from 'lucide-react';
 const sentimentColors = {
   positive: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   negative: 'bg-red-500/10 text-red-400 border-red-500/20',
-  neutral: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+  neutral: 'bg-th-raised text-th-tx3 border-th-border',
   mixed: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   critical: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
 };
@@ -24,12 +24,12 @@ export default function EpisodeCard({ episode, onClick }) {
   return (
     <div
       onClick={() => onClick?.(episode)}
-      className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 hover:border-zinc-600 transition-colors cursor-pointer group"
+      className="bg-th-surface border border-th-border rounded-xl p-5 hover:border-th-accent/30 transition-colors cursor-pointer group"
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-zinc-500 mb-1">{episode.show}</p>
-          <h3 className="text-white font-medium text-sm leading-snug group-hover:text-violet-300 transition-colors">
+          <p className="text-xs text-th-tx3 mb-1">{episode.show}</p>
+          <h3 className="text-th-tx1 font-medium text-sm leading-snug group-hover:text-th-accent transition-colors">
             {episode.title}
           </h3>
         </div>
@@ -38,23 +38,23 @@ export default function EpisodeCard({ episode, onClick }) {
         </span>
       </div>
 
-      <p className="text-zinc-400 text-xs leading-relaxed mb-4 line-clamp-2">
+      <p className="text-th-tx2 text-xs leading-relaxed mb-4 line-clamp-2">
         {episode.summary}
       </p>
 
       <div className="flex flex-wrap gap-1.5 mb-4">
         {episode.topics.slice(0, 3).map((topic) => (
-          <span key={topic} className="text-[11px] text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <span key={topic} className="text-[11px] text-th-tx3 bg-th-raised px-2 py-0.5 rounded-full flex items-center gap-1">
             <Tag size={9} />
             {topic}
           </span>
         ))}
         {episode.topics.length > 3 && (
-          <span className="text-[11px] text-zinc-600 px-2 py-0.5">+{episode.topics.length - 3}</span>
+          <span className="text-[11px] text-th-tx4 px-2 py-0.5">+{episode.topics.length - 3}</span>
         )}
       </div>
 
-      <div className="flex items-center gap-4 text-xs text-zinc-500 border-t border-zinc-800 pt-3">
+      <div className="flex items-center gap-4 text-xs text-th-tx3 border-t border-th-border pt-3">
         <span className="flex items-center gap-1.5"><Clock size={11} />{formatDuration(episode.duration)}</span>
         <span className="flex items-center gap-1.5"><Headphones size={11} />{formatNumber(episode.listens)}</span>
         <span className="flex items-center gap-1.5"><Share2 size={11} />{episode.shareCount}</span>

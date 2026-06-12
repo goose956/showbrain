@@ -1,1 +1,75 @@
 @import "tailwindcss";
+
+/* ─── Tailwind v4: inline theme so CSS vars resolve at runtime ────── */
+@theme inline {
+  --color-th-bg:       var(--th-bg);
+  --color-th-surface:  var(--th-surface);
+  --color-th-raised:   var(--th-raised);
+  --color-th-border:   var(--th-border);
+  --color-th-tx1:      var(--th-tx1);
+  --color-th-tx2:      var(--th-tx2);
+  --color-th-tx3:      var(--th-tx3);
+  --color-th-tx4:      var(--th-tx4);
+  --color-th-accent:   var(--th-accent);
+  --color-th-accentH:  var(--th-accentH);
+  --color-th-accentFg: var(--th-accentFg);
+  --color-th-sidebar:  var(--th-sidebar);
+  --color-th-sborder:  var(--th-sborder);
+}
+
+/* ─── Dark (zinc + violet) ────────────────────────────────────────── */
+[data-theme="dark"] {
+  --th-bg:       #09090b;
+  --th-surface:  #18181b;
+  --th-raised:   #27272a;
+  --th-border:   #3f3f46;
+  --th-tx1:      #ffffff;
+  --th-tx2:      #d4d4d8;
+  --th-tx3:      #a1a1aa;
+  --th-tx4:      #71717a;
+  --th-accent:   #8b5cf6;
+  --th-accentH:  #7c3aed;
+  --th-accentFg: #ffffff;
+  --th-sidebar:  #0f0f13;
+  --th-sborder:  #27272a;
+}
+
+/* ─── Light (warm white + orange) ────────────────────────────────── */
+[data-theme="light"] {
+  --th-bg:       #fef9f6;
+  --th-surface:  #ffffff;
+  --th-raised:   #fff3ec;
+  --th-border:   #f0d9cc;
+  --th-tx1:      #0c0a09;
+  --th-tx2:      #292524;
+  --th-tx3:      #78716c;
+  --th-tx4:      #a8a29e;
+  --th-accent:   #f97316;
+  --th-accentH:  #ea580c;
+  --th-accentFg: #ffffff;
+  --th-sidebar:  #fff7f2;
+  --th-sborder:  #fde8d8;
+}
+
+/* ─── Midnight (deep blue + cyan) ────────────────────────────────── */
+[data-theme="midnight"] {
+  --th-bg:       #020611;
+  --th-surface:  #080f24;
+  --th-raised:   #101d3a;
+  --th-border:   #1e3056;
+  --th-tx1:      #ffffff;
+  --th-tx2:      #cbd5e1;
+  --th-tx3:      #94a3b8;
+  --th-tx4:      #64748b;
+  --th-accent:   #06b6d4;
+  --th-accentH:  #0891b2;
+  --th-accentFg: #ffffff;
+  --th-sidebar:  #040a1a;
+  --th-sborder:  #102040;
+}
+
+* { box-sizing: border-box; }
+body {
+  background-color: var(--th-bg);
+  color: var(--th-tx1);
+}

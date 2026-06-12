@@ -49,12 +49,12 @@ export default function Connections() {
     <div className="max-w-2xl mx-auto py-12 px-4">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
-          <Plug size={18} className="text-violet-400" />
+        <div className="w-9 h-9 rounded-xl bg-th-accent/10 border border-th-accent/20 flex items-center justify-center">
+          <Plug size={18} className="text-th-accent" />
         </div>
         <div>
-          <h1 className="text-white font-semibold text-lg">Connections</h1>
-          <p className="text-zinc-500 text-xs">Social accounts connected via Zernio — used when publishing from Post Queue.</p>
+          <h1 className="text-th-tx1 font-semibold text-lg">Connections</h1>
+          <p className="text-th-tx3 text-xs">Social accounts connected via Zernio — used when publishing from Post Queue.</p>
         </div>
       </div>
 
@@ -79,7 +79,7 @@ export default function Connections() {
 
       {/* Loading */}
       {loading && (
-        <div className="flex items-center gap-2 text-zinc-500 text-sm py-8 justify-center">
+        <div className="flex items-center gap-2 text-th-tx3 text-sm py-8 justify-center">
           <Loader2 size={16} className="animate-spin" />
           Loading accounts…
         </div>
@@ -93,10 +93,10 @@ export default function Connections() {
               const c = COLOR_MAP[color];
               const connected = byPlatform[id] || [];
               return (
-                <div key={id} className={`rounded-xl border p-4 ${connected.length ? c.card : 'border-zinc-800 bg-zinc-900/50'}`}>
+                <div key={id} className={`rounded-xl border p-4 ${connected.length ? c.card : 'border-th-border bg-th-surface/50'}`}>
                   <div className="flex items-center gap-2.5 mb-3">
-                    <Icon size={16} className={connected.length ? c.icon : 'text-zinc-600'} />
-                    <span className={`text-sm font-medium ${connected.length ? 'text-white' : 'text-zinc-500'}`}>{label}</span>
+                    <Icon size={16} className={connected.length ? c.icon : 'text-th-tx4'} />
+                    <span className={`text-sm font-medium ${connected.length ? 'text-th-tx1' : 'text-th-tx3'}`}>{label}</span>
                     {connected.length > 0 && (
                       <span className={`ml-auto flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${c.badge}`}>
                         <CheckCircle size={10} />
@@ -110,12 +110,12 @@ export default function Connections() {
                       {connected.map((acc) => (
                         <div key={acc._id} className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                          <span className="text-zinc-400 text-xs truncate">{acc.name || acc.username || acc._id}</span>
+                          <span className="text-th-tx2 text-xs truncate">{acc.name || acc.username || acc._id}</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-zinc-600 text-xs">No account connected</p>
+                    <p className="text-th-tx4 text-xs">No account connected</p>
                   )}
                 </div>
               );
@@ -123,31 +123,31 @@ export default function Connections() {
           </div>
 
           {/* Summary + refresh */}
-          <div className="flex items-center justify-between py-3 border-t border-zinc-800">
-            <p className="text-zinc-500 text-xs">
+          <div className="flex items-center justify-between py-3 border-t border-th-border">
+            <p className="text-th-tx3 text-xs">
               {accounts.length === 0
                 ? 'No accounts connected yet.'
                 : `${accounts.length} account${accounts.length !== 1 ? 's' : ''} connected across ${Object.keys(byPlatform).length} platform${Object.keys(byPlatform).length !== 1 ? 's' : ''}.`}
             </p>
             <button
               onClick={load}
-              className="text-xs text-zinc-500 hover:text-white transition-colors"
+              className="text-xs text-th-tx3 hover:text-th-tx1 transition-colors"
             >
               Refresh
             </button>
           </div>
 
           {/* Link to Zernio */}
-          <div className="mt-6 bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex items-start justify-between gap-4">
+          <div className="mt-6 bg-th-surface border border-th-border rounded-xl p-4 flex items-start justify-between gap-4">
             <div>
-              <p className="text-white text-sm font-medium mb-1">Manage in Zernio</p>
-              <p className="text-zinc-500 text-xs leading-relaxed">Connect, disconnect, or add new social accounts in your Zernio dashboard. Changes appear here after a refresh.</p>
+              <p className="text-th-tx1 text-sm font-medium mb-1">Manage in Zernio</p>
+              <p className="text-th-tx3 text-xs leading-relaxed">Connect, disconnect, or add new social accounts in your Zernio dashboard. Changes appear here after a refresh.</p>
             </div>
             <a
               href="https://zernio.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-700 hover:border-zinc-600 text-zinc-400 hover:text-white text-xs transition-colors"
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-th-border hover:border-th-border text-th-tx2 hover:text-th-tx1 text-xs transition-colors"
             >
               <ExternalLink size={12} />
               Open Zernio
