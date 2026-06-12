@@ -3,7 +3,7 @@ import { getAudioUrl, downloadAudio, cleanupAudio } from './ytdlp.js';
 import { transcribeUrl, transcribeFile } from './transcribe.js';
 import { fetchCaptions, cleanupCaptions } from './captions.js';
 import { analyseEpisode, analyseDimensions } from './analyse.js';
-import { getChannel, upsertChannel, upsertEpisode, getEpisodeByVideoId, getUserSettings, savePost } from './store.js';
+import { getChannel, upsertChannel, upsertEpisode, getEpisodeByVideoId, getEpisodes, getUserSettings, savePost } from './store.js';
 import { generatePosts } from './analyse.js';
 
 // Per-user sync state — in-memory, survives navigation but not server restarts
@@ -140,6 +140,62 @@ async function processVideo(userId, video, channelId, channelName) {
     return episode;
   } finally {
     if (audioPath) cleanupAudio(audioPath);
+  }
+}
+
+// ── per-channel top-video analysis state ─────────────────────────────────────
+
+const topAnalysisStates = new Map(); // key: `${userId}:${channelId}`
+
+export function getTopAnalysisState(userId, channelId) {
+  return topAnalysisStates.get(`${userId}:${channelId}`) || null;
+}
+
+export async function analyseTopVideos(userId, channelId, topN = 5) {
+  const key = `${userId}:${channelId}`;
+  topAnalysisStates.set(key, { running: true, analysed: 0, total: topN, errors: [] });
+
+  try {
+    const episodes = await getEpisodes(userId, channelId);
+    const top = [...episodes]
+      .filter(e => e.viewCount > 0)
+      .sort((a, b) => b.viewCount - a.viewCount)
+      .slice(0, topN);
+
+    topAnalysisStates.get(key).total = top.length;
+    console.log(`[top-analysis:${userId}:${channelId}] Analysing top ${top.length} videos`);
+
+    for (const ep of top) {
+      try {
+        console.log(`[top-analysis] Fetching captions: ${ep.title}`);
+        const raw = await fetchCaptions(ep.videoId);
+        const transcript = await cleanupCaptions(raw, ep.title);
+        const [analysis, dimensions] = await Promise.all([
+          analyseEpisode(transcript, ep.title),
+          analyseDimensions(transcript, ep.title),
+        ]);
+        await upsertEpisode(userId, {
+          ...ep,
+          transcript,
+          summary: analysis.summary,
+          topics: analysis.topics,
+          sentiment: analysis.sentiment,
+          dimensions: { ...ep.dimensions, ...dimensions },
+          transcriptStatus: 'ok',
+          syncedAt: new Date().toISOString(),
+        });
+        topAnalysisStates.get(key).analysed++;
+        console.log(`[top-analysis] Done (${topAnalysisStates.get(key).analysed}/${top.length}): ${ep.title}`);
+      } catch (err) {
+        console.warn(`[top-analysis] Failed "${ep.title}": ${err.message}`);
+        topAnalysisStates.get(key).errors.push({ videoId: ep.videoId, error: err.message });
+        topAnalysisStates.get(key).analysed++;
+      }
+    }
+  } finally {
+    const state = topAnalysisStates.get(key);
+    if (state) state.running = false;
+    console.log(`[top-analysis:${userId}:${channelId}] Complete`);
   }
 }
 

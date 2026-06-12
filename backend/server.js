@@ -9,7 +9,7 @@ import { randomUUID } from 'crypto';
 import { initSchema } from './services/db.js';
 import { resolveChannelId, getChannelInfo, getChannelVideosPage, getAllChannelVideos, getVideoDurations } from './services/youtube.js';
 import { analyseTitlesBatch } from './services/analyse.js';
-import { syncChannel, getSyncState } from './services/sync.js';
+import { syncChannel, getSyncState, analyseTopVideos, getTopAnalysisState } from './services/sync.js';
 import { getChannels, getChannel, upsertChannel, deleteChannel, getEpisodes, getEpisodeByVideoId, getClicks, logClick, addWaitlistEmail, upsertEpisode, getMembers, getMemberById, getMemberByUsername, createMember, deleteMember, getUserSettings, setUserSettings, getPosts, savePost, updatePostStatus, deletePost, getIdeas, saveIdeas, deleteIdeas, getScripts, saveScript, deleteScript } from './services/store.js';
 import { generatePosts } from './services/analyse.js';
 import { hashPassword, verifyPassword, createToken, verifyToken } from './services/auth.js';
@@ -223,9 +223,27 @@ app.post('/api/channels/compare-import', async (req, res) => {
     }
 
     res.json({ channel, videoCount: videos.length });
+
+    // Fire-and-forget: fetch transcripts + full analysis for top 5 videos
+    analyseTopVideos(req.userId, channelId, 5).catch(err =>
+      console.error(`[top-analysis:${channelId}] Background task failed:`, err.message)
+    );
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// Top-video analysis status for a channel
+app.get('/api/channels/:id/top-status', requireAuth, async (req, res) => {
+  const state = getTopAnalysisState(req.userId, req.params.id);
+  if (!state) return res.json({ running: false, analysed: 0, total: 0, done: true });
+  res.json({
+    running: state.running,
+    analysed: state.analysed,
+    total: state.total,
+    done: !state.running,
+    errors: state.errors.length,
+  });
 });
 
 app.delete('/api/channels/:id', async (req, res) => {

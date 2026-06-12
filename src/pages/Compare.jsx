@@ -435,16 +435,46 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
   const [generating, setGenerating] = useState(false);
   const [insightError, setInsightError] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  // Map of channelId → { running, analysed, total }
+  const [topAnalysis, setTopAnalysis] = useState({});
 
   useEffect(() => {
     fetchSavedInsights('compareInsights').then(saved => { if (saved) setInsights(saved); }).catch(() => {});
   }, []);
 
+  // Poll top-analysis status for any compare_only channels that are running
+  useEffect(() => {
+    const compareChannels = channels.filter(c => c.compareOnly);
+    if (!compareChannels.length) return;
+
+    let active = true;
+    const poll = async () => {
+      for (const ch of compareChannels) {
+        try {
+          const res = await apiFetch(`/api/channels/${ch.id}/top-status`);
+          const data = await res.json();
+          setTopAnalysis(prev => {
+            const wasRunning = prev[ch.id]?.running;
+            if (wasRunning && !data.running) onChannelsLoaded?.();
+            return { ...prev, [ch.id]: data };
+          });
+        } catch {}
+      }
+      if (active) setTimeout(poll, 8000);
+    };
+    poll();
+    return () => { active = false; };
+  }, [channels]);
+
   const channelStats = useMemo(() => buildChannelStats(episodes, channels), [episodes, channels]);
   const highlights = useMemo(() => buildHighlights(channelStats), [channelStats]);
 
-  const handleChannelAdded = () => {
+  const handleChannelAdded = (channel) => {
     setShowAddForm(false);
+    // Mark this channel as pending analysis immediately for instant UI feedback
+    if (channel?.id) {
+      setTopAnalysis(prev => ({ ...prev, [channel.id]: { running: true, analysed: 0, total: 5 } }));
+    }
     onChannelsLoaded?.();
   };
 
@@ -556,12 +586,20 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
         <div className="flex flex-wrap items-center gap-2 mt-3">
           {channelStats.map(ch => {
             const pal = CHANNEL_PALETTE[ch.paletteIdx];
+            const tas = topAnalysis[ch.channelId];
+            const analysing = tas?.running;
             return (
               <span key={ch.channelId} className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border ${pal.light}`}>
                 <span className={`w-2 h-2 rounded-full ${pal.bar}`} />
                 {ch.name}
                 {ch.isPrimary && (
                   <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full">You</span>
+                )}
+                {analysing && (
+                  <span className="flex items-center gap-1 text-[10px] text-th-tx4">
+                    <Loader2 size={9} className="animate-spin" />
+                    {tas.analysed}/{tas.total} analysed
+                  </span>
                 )}
               </span>
             );
