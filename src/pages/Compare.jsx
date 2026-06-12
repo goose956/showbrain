@@ -323,7 +323,6 @@ const TABLE_COLS = [
   { key: 'ppm',             label: 'Posts/Mo',    sortable: true },
   { key: 'avgViews',        label: 'Avg Views',   sortable: true },
   { key: 'viewsPerSub',     label: 'Views/Sub',   sortable: true },
-  { key: 'growthPct',       label: 'Trend',       sortable: true },
   { key: 'engagementRate',  label: 'Engagement',  sortable: true },
   { key: 'topFormat',       label: 'Top Format',  sortable: false },
   { key: 'topHook',         label: 'Top Hook',    sortable: false },
@@ -592,13 +591,6 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
                     <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{ch.ppm || '—'}</td>
                     <td className={`px-4 py-3 text-xs tabular-nums font-medium ${pal.text}`}>{fmt(ch.avgViews)}</td>
                     <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{ch.viewsPerSub ? ch.viewsPerSub.toFixed(2) : '—'}</td>
-                    <td className="px-4 py-3 text-xs tabular-nums">
-                      {ch.growthPct !== null ? (
-                        <span className={ch.growthPct >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-                          {ch.growthPct >= 0 ? '+' : ''}{ch.growthPct.toFixed(0)}%
-                        </span>
-                      ) : <span className="text-th-tx4">—</span>}
-                    </td>
                     <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{pct(ch.engagementRate)}</td>
                     <td className="px-4 py-3">
                       {ch.topFormat ? (
