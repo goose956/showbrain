@@ -32,7 +32,7 @@ export default function App() {
   const [episodes, setEpisodes] = useState([]);
   const [posts, setPosts] = useState([]);
   const [scriptBrief, setScriptBrief] = useState(null);
-  const [authScreen, setAuthScreen] = useState('login');
+  const [authScreen, setAuthScreen] = useState('home');
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 

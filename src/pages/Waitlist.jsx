@@ -73,7 +73,7 @@ const PLATFORMS = [
     label: 'Twitter / X',
     color: 'text-sky-400',
     bg: 'bg-sky-500/10 border-sky-500/20',
-    content: '"The #1 reason podcasts fail isn\'t content quality — it\'s consistency. Here\'s what the data shows after analysing 200+ episodes 🧵',
+    content: 'Most people get this completely wrong. We broke down 3 years of data from our back catalogue and found one pattern that keeps showing up in every top-performing episode 🧵',
     tag: 'Thread hook',
   },
   {
@@ -81,7 +81,7 @@ const PLATFORMS = [
     label: 'LinkedIn',
     color: 'text-blue-400',
     bg: 'bg-blue-500/10 border-blue-500/20',
-    content: 'We just published episode 47 of the podcast. The stat that surprised us most: solo episodes outperform interviews by 2.3× on our channel. Here\'s why that changed how we plan content...',
+    content: 'New episode out today. I\'ve been sitting on this one for a while — it\'s the most honest conversation we\'ve had about what actually moves the needle, versus what sounds good in theory.',
     tag: 'Professional post',
   },
   {
@@ -89,7 +89,7 @@ const PLATFORMS = [
     label: 'Instagram',
     color: 'text-pink-400',
     bg: 'bg-pink-500/10 border-pink-500/20',
-    content: 'New episode just dropped 🎙️ We break down the exact framework that grew our podcast from 0 to 50k downloads. Link in bio #podcast #contentcreator #growthhacks',
+    content: 'New episode just dropped 🎙️ This week we dig into the one thing holding most creators back — and it\'s not what you think. Link in bio to listen 👆 #podcast #creator #contentcreator',
     tag: 'Caption + hashtags',
   },
   {
@@ -97,7 +97,7 @@ const PLATFORMS = [
     label: 'Newsletter',
     color: 'text-amber-400',
     bg: 'bg-amber-500/10 border-amber-500/20',
-    content: 'This week we sat down to dig into the real numbers behind podcast growth. The short version: your hook matters more than your guest. Here\'s what the data told us — and how to use it.',
+    content: 'This week\'s episode is a good one. We covered a topic our listeners have been asking about for months — and I think you\'ll find at least one thing worth stealing from it.',
     tag: 'Email blurb',
   },
 ];
@@ -186,14 +186,14 @@ export default function Waitlist({ onGoLogin }) {
           </div>
 
           <h1 className="text-5xl font-bold text-th-tx1 leading-tight tracking-tight mb-6">
-            Record once.<br />
+            The intelligence layer<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-sky-400">
-              Publish everywhere.
+              every podcaster needs
             </span>
           </h1>
 
           <p className="text-th-tx2 text-lg leading-relaxed max-w-2xl mx-auto mb-10">
-            ShowBrain watches your YouTube channel and automatically repurposes every new episode into platform-native content for Twitter, LinkedIn, Instagram, and email — the moment it goes live.
+            ShowBrain transcribes your episodes, analyses what works, generates scripts from your best patterns, and tells you exactly what to create next.
           </p>
 
           {!submitted ? (
@@ -222,6 +222,29 @@ export default function Waitlist({ onGoLogin }) {
           {error && <p className="text-red-400 text-xs mt-3">{error}</p>}
 
           <p className="text-th-tx4 text-xs mt-4">No credit card. No spam. Cancel anytime.</p>
+        </div>
+      </div>
+
+      {/* ── Mock UI preview ── */}
+      <div className="max-w-4xl mx-auto px-8 pb-16">
+        <div className="bg-th-surface/60 border border-th-border rounded-2xl p-6 backdrop-blur">
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-3 h-3 rounded-full bg-red-500/60" />
+            <div className="w-3 h-3 rounded-full bg-amber-500/60" />
+            <div className="w-3 h-3 rounded-full bg-emerald-500/60" />
+            <span className="text-th-tx4 text-xs ml-3">ShowBrain — Episode Intelligence</span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <MockCard title="Avg Views" value="42.1k" sub="↑ 18% last 30 days" color="text-th-accent" />
+            <MockCard title="Best Format" value="Solo" sub="2.3× engagement rate" color="text-sky-400" />
+            <MockCard title="Top Hook" value="Bold Claim" sub="Used in 8 of top 10 eps" color="text-emerald-400" />
+          </div>
+          <div className="bg-th-bg/60 border border-th-border rounded-xl px-4 py-1">
+            <MockRow title="Why I Quit My $300k Job to Build a Podcast" views="128k" badge="Bold Claim" badgeColor="bg-red-500/10 border-red-500/20 text-red-300" />
+            <MockRow title="The Podcasting Mistake Nobody Talks About" views="94k" badge="Solo" badgeColor="bg-sky-500/10 border-sky-500/20 text-sky-300" />
+            <MockRow title="I Interviewed 50 Podcast Editors — Here's What They Said" views="71k" badge="Interview" badgeColor="bg-th-accent/10 border-th-accent/20 text-th-accent" />
+            <MockRow title="Why Your Podcast Isn't Growing (Real Data)" views="63k" badge="Stat" badgeColor="bg-amber-500/10 border-amber-500/20 text-amber-300" />
+          </div>
         </div>
       </div>
 
@@ -288,29 +311,6 @@ export default function Waitlist({ onGoLogin }) {
               </div>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* ── Mock UI preview ── */}
-      <div className="max-w-4xl mx-auto px-8 pb-16">
-        <div className="bg-th-surface/60 border border-th-border rounded-2xl p-6 backdrop-blur">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-3 h-3 rounded-full bg-red-500/60" />
-            <div className="w-3 h-3 rounded-full bg-amber-500/60" />
-            <div className="w-3 h-3 rounded-full bg-emerald-500/60" />
-            <span className="text-th-tx4 text-xs ml-3">ShowBrain — Episode Intelligence</span>
-          </div>
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <MockCard title="Avg Views" value="42.1k" sub="↑ 18% last 30 days" color="text-th-accent" />
-            <MockCard title="Best Format" value="Solo" sub="2.3× engagement rate" color="text-sky-400" />
-            <MockCard title="Top Hook" value="Bold Claim" sub="Used in 8 of top 10 eps" color="text-emerald-400" />
-          </div>
-          <div className="bg-th-bg/60 border border-th-border rounded-xl px-4 py-1">
-            <MockRow title="Why I Quit My $300k Job to Build a Podcast" views="128k" badge="Bold Claim" badgeColor="bg-red-500/10 border-red-500/20 text-red-300" />
-            <MockRow title="The Podcasting Mistake Nobody Talks About" views="94k" badge="Solo" badgeColor="bg-sky-500/10 border-sky-500/20 text-sky-300" />
-            <MockRow title="I Interviewed 50 Podcast Editors — Here's What They Said" views="71k" badge="Interview" badgeColor="bg-th-accent/10 border-th-accent/20 text-th-accent" />
-            <MockRow title="Why Your Podcast Isn't Growing (Real Data)" views="63k" badge="Stat" badgeColor="bg-amber-500/10 border-amber-500/20 text-amber-300" />
-          </div>
         </div>
       </div>
 
