@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, LogOut, ChevronDown, Settings, ShieldCheck, Moon, Sun, SunMoon, Loader2, CheckCircle } from 'lucide-react';
+import { User, LogOut, ChevronDown, Settings, ShieldCheck, Moon, Sun, SunMoon, Loader2, CheckCircle, Gauge, TvMinimalPlay, LayoutDashboard } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 const THEME_ICONS = { dark: Moon, light: Sun, midnight: SunMoon };
@@ -51,7 +51,13 @@ function SyncPill({ syncStatus, onNavigate }) {
   );
 }
 
-export default function Topbar({ currentUser, isAdmin, onLogout, onNavigate, syncStatus }) {
+const NAV_ITEMS = [
+  { id: 'overview',  label: 'Dashboard', icon: Gauge },
+  { id: 'channel',   label: 'Channel',   icon: TvMinimalPlay },
+  { id: 'dashboard', label: 'Library',   icon: LayoutDashboard },
+];
+
+export default function Topbar({ currentUser, isAdmin, onLogout, onNavigate, syncStatus, activePage }) {
   const { theme, setTheme, themes } = useTheme();
   const [userOpen, setUserOpen] = useState(false);
   const dropRef = useRef(null);
@@ -63,7 +69,7 @@ export default function Topbar({ currentUser, isAdmin, onLogout, onNavigate, syn
   }, []);
 
   return (
-    <header className="h-11 shrink-0 border-b border-th-border bg-th-surface flex items-center px-4 gap-3">
+    <header className="h-16 shrink-0 border-b border-th-border bg-th-surface flex items-center px-4 gap-3">
 
       {/* ── Theme switcher ─────────────────────────────────────────── */}
       <div className="flex items-center gap-1 bg-th-raised border border-th-border rounded-lg p-0.5">
@@ -88,6 +94,30 @@ export default function Topbar({ currentUser, isAdmin, onLogout, onNavigate, syn
 
       {/* ── Sync status (global, persists across pages) ────────────── */}
       {syncStatus && <SyncPill syncStatus={syncStatus} onNavigate={onNavigate} />}
+
+      {/* ── Spacer ─────────────────────────────────────────────────── */}
+      <div className="flex-1" />
+
+      {/* ── Primary nav ────────────────────────────────────────────── */}
+      <div className="flex items-center gap-1">
+        {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+          const active = activePage === id;
+          return (
+            <button
+              key={id}
+              onClick={() => onNavigate(id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                active
+                  ? 'bg-th-accent/15 text-th-accent border border-th-accent/25'
+                  : 'text-th-tx3 hover:text-th-tx1 hover:bg-th-raised border border-transparent'
+              }`}
+            >
+              <Icon size={16} />
+              {label}
+            </button>
+          );
+        })}
+      </div>
 
       {/* ── Spacer ─────────────────────────────────────────────────── */}
       <div className="flex-1" />

@@ -198,6 +198,7 @@ export default function App() {
           onLogout={handleLogout}
           onNavigate={handlePageChange}
           syncStatus={syncStatus}
+          activePage={page}
         />
         <main className="flex-1 min-h-0 overflow-y-auto">
           {renderPage()}

@@ -1,22 +1,12 @@
 import { useState } from 'react';
 import {
-  LayoutDashboard, Search, BarChart2, Lightbulb,
-  Inbox, TvMinimalPlay, Plug, PenLine, FlaskConical,
-  GitCompare, LineChart, ChevronDown, Zap, Gauge, Settings, ShieldCheck,
+  Search, BarChart2, Lightbulb,
+  Inbox, Plug, PenLine, FlaskConical,
+  GitCompare, LineChart, ChevronDown, Zap,
 } from 'lucide-react';
 
 /* ── Per-item icon colours (fixed across all themes) ─────────────── */
 const nav = [
-  {
-    section: 'Content',
-    color: 'from-blue-500/20 to-indigo-500/10',
-    borderColor: 'border-blue-500/20',
-    items: [
-      { id: 'overview',  label: 'Dashboard', icon: Gauge,           iconBg: 'bg-rose-500',    iconColor: 'text-white' },
-      { id: 'channel',   label: 'Channel',   icon: TvMinimalPlay,   iconBg: 'bg-blue-500',    iconColor: 'text-white' },
-      { id: 'dashboard', label: 'Library',   icon: LayoutDashboard, iconBg: 'bg-indigo-500',  iconColor: 'text-white' },
-    ],
-  },
   {
     section: 'Analyse',
     color: 'from-violet-500/20 to-emerald-500/10',
