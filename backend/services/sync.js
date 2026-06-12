@@ -184,7 +184,7 @@ export async function syncChannel({ userId, channelId, videoIds, maxVideos = 20,
     for (let b = 0; b < state.totalBatches; b++) {
       state.currentBatch = b + 1;
       const batch = videos.slice(b * batchSize, (b + 1) * batchSize);
-      for (const video of batch) {
+      await Promise.all(batch.map(async (video) => {
         try {
           await processVideo(userId, video, channelId, channel.name);
         } catch (err) {
@@ -193,7 +193,7 @@ export async function syncChannel({ userId, channelId, videoIds, maxVideos = 20,
           state.processed++;
           state.progress = Math.round((state.processed / state.total) * 100);
         }
-      }
+      }));
       if (b < state.totalBatches - 1) await new Promise(r => setTimeout(r, batchDelay));
     }
 
