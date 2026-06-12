@@ -190,7 +190,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-th-bg overflow-hidden">
-      <Sidebar active={page} onChange={handlePageChange} />
+      <Sidebar active={page} onChange={handlePageChange} isAdmin={currentUser.isAdmin} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Topbar
           currentUser={currentUser.username}

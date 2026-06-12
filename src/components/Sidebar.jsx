@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, Search, BarChart2, Lightbulb,
   Inbox, TvMinimalPlay, Plug, PenLine, FlaskConical,
-  GitCompare, LineChart, ChevronDown, Zap, Gauge, Settings,
+  GitCompare, LineChart, ChevronDown, Zap, Gauge, Settings, ShieldCheck,
 } from 'lucide-react';
 
 /* ── Per-item icon colours (fixed across all themes) ─────────────── */
@@ -45,12 +45,11 @@ const nav = [
       { id: 'queue',     label: 'Post Queue',  icon: Inbox,     iconBg: 'bg-purple-500', iconColor: 'text-white' },
       { id: 'analytics', label: 'Analytics',   icon: LineChart, iconBg: 'bg-sky-500',    iconColor: 'text-white' },
       { id: 'publish',   label: 'Connections', icon: Plug,      iconBg: 'bg-teal-500',   iconColor: 'text-white' },
-      { id: 'settings',  label: 'Settings',    icon: Settings,  iconBg: 'bg-slate-500',  iconColor: 'text-white' },
     ],
   },
 ];
 
-export default function Sidebar({ active, onChange }) {
+export default function Sidebar({ active, onChange, isAdmin }) {
   const initialOpen = () => {
     const s = {};
     nav.forEach(({ section }) => { s[section] = true; });
@@ -74,6 +73,30 @@ export default function Sidebar({ active, onChange }) {
           <Zap size={12} className="text-white" />
         </div>
         <span className="text-th-tx1 font-bold text-sm tracking-tight">ShowBrain</span>
+      </div>
+
+      {/* ── Pinned top links ─────────────────────────────────────── */}
+      <div className="px-2 pt-2 pb-1 flex flex-col gap-0.5 border-b border-th-sborder">
+        {[
+          { id: 'settings', label: 'Settings', icon: Settings, iconBg: 'bg-slate-500' },
+          ...(isAdmin ? [{ id: 'admin', label: 'Admin', icon: ShieldCheck, iconBg: 'bg-red-500' }] : []),
+        ].map(({ id, label, icon: Icon, iconBg }) => {
+          const isActive = active === id;
+          return (
+            <button
+              key={id}
+              onClick={() => onChange(id)}
+              className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-xs transition-all group ${
+                isActive ? 'bg-white/10 text-th-tx1' : 'text-th-tx3 hover:text-th-tx1 hover:bg-white/5'
+              }`}
+            >
+              <span className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${iconBg} ${isActive ? 'opacity-100' : 'opacity-55 group-hover:opacity-85'}`}>
+                <Icon size={11} className="text-white" />
+              </span>
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {/* ── Nav sections ─────────────────────────────────────────── */}
