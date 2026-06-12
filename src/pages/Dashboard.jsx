@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Loader2, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import EpisodeCard from '../components/EpisodeCard';
 import { generateShowNotes, generateChapterMarkers } from '../lib/claude';
+import { ErrorToast } from '../components/Dialog';
 
 const PAGE_SIZE = 10;
 
@@ -12,6 +13,7 @@ export default function Dashboard({ episodes }) {
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [loadingChapters, setLoadingChapters] = useState(false);
   const [expanded, setExpanded] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
   const [page, setPage] = useState(1);
 
   const totalPages = Math.max(1, Math.ceil(episodes.length / PAGE_SIZE));
@@ -35,7 +37,7 @@ export default function Dashboard({ episodes }) {
       setShowNotes(notes);
       setExpanded('notes');
     } catch (e) {
-      alert(e.message);
+      setErrorMsg(e.message);
     } finally {
       setLoadingNotes(false);
     }
@@ -49,7 +51,7 @@ export default function Dashboard({ episodes }) {
       setChapters(ch);
       setExpanded('chapters');
     } catch (e) {
-      alert(e.message);
+      setErrorMsg(e.message);
     } finally {
       setLoadingChapters(false);
     }
@@ -57,6 +59,7 @@ export default function Dashboard({ episodes }) {
 
   return (
     <div className="flex h-full">
+      {errorMsg && <ErrorToast message={errorMsg} onClose={() => setErrorMsg('')} />}
       {/* Episode list */}
       <div className="w-96 border-r border-th-border flex flex-col shrink-0">
         <div className="px-4 pt-4 pb-2 shrink-0 flex items-center justify-between">

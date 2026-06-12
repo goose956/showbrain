@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Sparkles, ChevronUp, ChevronDown, ChevronsUpDown, AlertCircle, CheckCircle2, XCircle, TrendingUp, Zap } from 'lucide-react';
 import { analyzeEpisodeDimensions, generateChannelInsights, fetchSavedInsights, persistInsights } from '../lib/claude';
+import { ErrorToast } from '../components/Dialog';
 
 // ─── label maps ────────────────────────────────────────────────────────────────
 
@@ -137,6 +138,7 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
   const [generatingInsights, setGeneratingInsights] = useState(false);
   const [page, setPage] = useState(1);
   const [selectedChannel, setSelectedChannel] = useState('all');
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     fetchSavedInsights('channelInsights').then(saved => { if (saved) setInsights(saved); }).catch(() => {});
@@ -167,7 +169,7 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
       setInsights(result);
       persistInsights('channelInsights', result).catch(() => {});
     } catch (err) {
-      alert(err.message);
+      setErrorMsg(err.message);
     } finally {
       setGeneratingInsights(false);
     }
@@ -197,7 +199,7 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
       const updated = episodes.map((e) => e.id === ep.id ? { ...e, dimensions: dims } : e);
       onEpisodesUpdate(updated);
     } catch (err) {
-      alert(err.message);
+      setErrorMsg(err.message);
     } finally {
       setAnalysing((a) => ({ ...a, [ep.id]: false }));
     }
@@ -244,6 +246,7 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
+      {errorMsg && <ErrorToast message={errorMsg} onClose={() => setErrorMsg('')} />}
       {/* Header */}
       <div className="border-b border-th-border px-6 py-4 shrink-0">
         <div className="flex items-center justify-between mb-3">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { apiFetch } from '../lib/api';
+import { ConfirmDialog } from '../components/Dialog';
 import {
   TvMinimalPlay, RefreshCw, Loader2, CheckCircle, AlertCircle,
   Trash2, Radio, ChevronDown, CheckSquare, Square, Play, Plus, X,
@@ -498,6 +499,7 @@ export default function Channel({ onEpisodesLoaded, onChannelsLoaded, syncStatus
   const [adding, setAdding] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [error, setError] = useState('');
+  const [confirmRemove, setConfirmRemove] = useState(null);
 
   useEffect(() => { loadChannels(); }, []);
 
@@ -595,17 +597,32 @@ export default function Channel({ onEpisodesLoaded, onChannelsLoaded, syncStatus
     }
   };
 
-  const handleRemove = async (channelId) => {
-    if (!confirm('Remove this channel? Its episodes will also be deleted.')) return;
+  const handleRemove = (channelId) => {
+    const ch = channels.find(c => c.id === channelId);
+    setConfirmRemove({ channelId, name: ch?.name || 'this channel' });
+  };
+
+  const doRemove = async () => {
+    const { channelId } = confirmRemove;
+    setConfirmRemove(null);
     await apiFetch(`/api/channels/${channelId}`, { method: 'DELETE' });
     setChannels(prev => prev.filter(c => c.id !== channelId));
-    // Reload episodes
     const epRes = await apiFetch('/api/episodes');
     onEpisodesLoaded?.(await epRes.json());
   };
 
   return (
     <div className="max-w-2xl mx-auto py-10 px-4">
+      {confirmRemove && (
+        <ConfirmDialog
+          title={`Remove ${confirmRemove.name}?`}
+          message="All episodes and generated content for this channel will be permanently deleted."
+          confirmLabel="Remove channel"
+          danger
+          onConfirm={doRemove}
+          onCancel={() => setConfirmRemove(null)}
+        />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
