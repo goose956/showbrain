@@ -378,16 +378,8 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
                     ) : <span className="text-th-tx4 text-xs">—</span>}
                   </td>
                   <td className="px-4 py-3">
-                    {!d && (
-                      <button
-                        onClick={() => handleAnalyse(ep)}
-                        disabled={isAnalysing}
-                        className="flex items-center gap-1.5 text-[11px] text-th-accent hover:text-th-accent disabled:opacity-50 transition-colors whitespace-nowrap"
-                      >
-                        {isAnalysing
-                          ? <><Loader2 size={11} className="animate-spin" />Analysing…</>
-                          : <><Sparkles size={11} />Analyse</>}
-                      </button>
+                    {!d && ep.transcriptStatus === 'no_captions' && (
+                      <span className="text-[11px] text-th-tx4">No captions</span>
                     )}
                   </td>
                 </tr>
