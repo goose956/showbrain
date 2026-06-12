@@ -384,4 +384,4 @@ cron.schedule('0 */6 * * *', async () => {
 
 initSchema()
   .then(() => app.listen(PORT, () => console.log(`ShowBrain backend on http://localhost:${PORT}`)))
-  .catch(err => { console.error('[startup] DB init failed:', err.message); process.exit(1); });
+  .catch(err => { console.error('[startup] DB init failed:', err.message, err.code, 'DATABASE_URL set:', !!process.env.DATABASE_URL); process.exit(1); });
