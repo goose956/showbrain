@@ -1,12 +1,21 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
   GitCompare, Sparkles, Loader2, AlertCircle, ChevronUp, ChevronDown,
-  ChevronsUpDown, TrendingUp, Zap, Target, Plus, X,
+  ChevronsUpDown, TrendingUp, Zap, Target, Plus, X, Trophy, Users,
+  BarChart2, ArrowUpRight, BookOpen,
 } from 'lucide-react';
 import { generateCrossChannelInsights, fetchSavedInsights, persistInsights } from '../lib/claude';
 import { apiFetch } from '../lib/api';
 
 // ── constants ─────────────────────────────────────────────────────────────────
+
+const CHANNEL_PALETTE = [
+  { bar: 'bg-th-accent',    text: 'text-th-accent',    light: 'bg-th-accent/10 border-th-accent/25 text-th-accent' },
+  { bar: 'bg-sky-500',      text: 'text-sky-300',      light: 'bg-sky-500/15 border-sky-500/25 text-sky-300' },
+  { bar: 'bg-emerald-500',  text: 'text-emerald-300',  light: 'bg-emerald-500/15 border-emerald-500/25 text-emerald-300' },
+  { bar: 'bg-amber-500',    text: 'text-amber-300',    light: 'bg-amber-500/15 border-amber-500/25 text-amber-300' },
+  { bar: 'bg-pink-500',     text: 'text-pink-300',     light: 'bg-pink-500/15 border-pink-500/25 text-pink-300' },
+];
 
 const DIM_COLORS = {
   solo: 'bg-sky-500/10 text-sky-300 border-sky-500/20',
@@ -17,26 +26,17 @@ const DIM_COLORS = {
   'controversial-question': 'bg-orange-500/10 text-orange-300 border-orange-500/20',
   'surprising-statistic': 'bg-amber-500/10 text-amber-300 border-amber-500/20',
   'cold-open': 'bg-cyan-500/10 text-cyan-300 border-cyan-500/20',
-  'direct-challenge': 'bg-red-500/10 text-red-300 border-red-500/20',
   tactical: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
   opinion: 'bg-purple-500/10 text-purple-300 border-purple-500/20',
   energetic: 'bg-yellow-500/10 text-yellow-300 border-yellow-500/20',
   educational: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
 };
 
-const CHANNEL_PALETTE = [
-  { bar: 'bg-th-accent', text: 'text-th-accent', light: 'bg-th-accent/10 border-th-accent/25 text-th-accent' },
-  { bar: 'bg-sky-500',    text: 'text-sky-300',    light: 'bg-sky-500/15 border-sky-500/25 text-sky-300' },
-  { bar: 'bg-emerald-500',text: 'text-emerald-300',light: 'bg-emerald-500/15 border-emerald-500/25 text-emerald-300' },
-  { bar: 'bg-amber-500',  text: 'text-amber-300',  light: 'bg-amber-500/15 border-amber-500/25 text-amber-300' },
-  { bar: 'bg-pink-500',   text: 'text-pink-300',   light: 'bg-pink-500/15 border-pink-500/25 text-pink-300' },
-];
-
 const DIM_LABELS = {
-  format:       { solo: 'Solo', interview: 'Interview', 'co-hosted': 'Co-hosted', panel: 'Panel', narrative: 'Narrative', qa: 'Q&A' },
-  hookType:     { 'bold-claim': 'Bold Claim', 'personal-story': 'Personal Story', 'controversial-question': 'Controversial Q', 'surprising-statistic': 'Stat', 'cold-open': 'Cold Open', 'direct-challenge': 'Direct Challenge' },
-  contentType:  { tactical: 'Tactical', opinion: 'Opinion', 'case-study': 'Case Study', 'personal-story': 'Story', 'trend-analysis': 'Trend', 'industry-news': 'Industry', 'myth-busting': 'Myth Bust' },
-  emotionalTone:{ energetic: 'Energetic', reflective: 'Reflective', confrontational: 'Confrontational', vulnerable: 'Vulnerable', educational: 'Educational' },
+  format:        { solo: 'Solo', interview: 'Interview', 'co-hosted': 'Co-hosted', panel: 'Panel', narrative: 'Narrative', qa: 'Q&A' },
+  hookType:      { 'bold-claim': 'Bold Claim', 'personal-story': 'Personal Story', 'controversial-question': 'Controversial Q', 'surprising-statistic': 'Stat', 'cold-open': 'Cold Open', 'direct-challenge': 'Direct Challenge' },
+  contentType:   { tactical: 'Tactical', opinion: 'Opinion', 'case-study': 'Case Study', 'personal-story': 'Story', 'trend-analysis': 'Trend', 'industry-news': 'Industry', 'myth-busting': 'Myth Bust' },
+  emotionalTone: { energetic: 'Energetic', reflective: 'Reflective', confrontational: 'Confrontational', vulnerable: 'Vulnerable', educational: 'Educational' },
 };
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -55,13 +55,8 @@ function channelAge(createdAt) {
   return `${years.toFixed(1)}yr`;
 }
 
-function viewsPerSub(totalViewCount, subscriberCount) {
-  if (!subscriberCount || !totalViewCount) return '—';
-  return (totalViewCount / subscriberCount).toFixed(1);
-}
-
 function pct(n) {
-  if (!n) return '—';
+  if (!n && n !== 0) return '—';
   return `${(n * 100).toFixed(1)}%`;
 }
 
@@ -85,10 +80,9 @@ function postsPerMonth(episodes) {
   if (dates.length < 2) return null;
   const months = (dates[dates.length - 1] - dates[0]) / (1000 * 60 * 60 * 24 * 30.4);
   if (months < 0.5) return null;
-  return (episodes.length / months).toFixed(1);
+  return parseFloat((episodes.length / months).toFixed(1));
 }
 
-// Build per-channel stats for the table + Claude
 function buildChannelStats(episodes, channels = []) {
   const byChannel = {};
   for (const ep of episodes) {
@@ -105,7 +99,6 @@ function buildChannelStats(episodes, channels = []) {
     const avgComments = avg(withViews.map(e => e.commentCount || 0));
     const engagementRate = avgViews > 0 ? (avgLikes + avgComments) / avgViews : 0;
 
-    // Growth: compare avg views of most recent 10 vs previous 10
     const sorted = [...eps].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
     const recent = sorted.slice(0, 10).filter(e => e.viewCount > 0);
     const older = sorted.slice(10, 20).filter(e => e.viewCount > 0);
@@ -113,22 +106,19 @@ function buildChannelStats(episodes, channels = []) {
     const olderAvg = older.length ? avg(older.map(e => e.viewCount)) : null;
     const growthPct = recentAvg && olderAvg ? ((recentAvg - olderAvg) / olderAvg) * 100 : null;
 
+    const subs = meta.subscriberCount || 0;
+    const viewsPerSub = subs > 0 ? avgViews / subs : null;
+
     return {
-      channelId,
-      name,
+      channelId, name,
       paletteIdx: idx % CHANNEL_PALETTE.length,
       episodeCount: eps.length,
       analysedCount: eps.filter(e => e.dimensions).length,
-      subscriberCount: meta.subscriberCount || 0,
+      subscriberCount: subs,
       totalViewCount: meta.totalViewCount || 0,
       channelCreatedAt: meta.channelCreatedAt || null,
-      avgViews,
-      avgLikes,
-      avgComments,
-      engagementRate,
-      viewsPerSub: meta.subscriberCount > 0 ? avgViews / meta.subscriberCount : null,
-      growthPct,
-      recentAvg,
+      avgViews, avgLikes, avgComments, engagementRate,
+      viewsPerSub, growthPct, recentAvg,
       ppm: postsPerMonth(eps),
       topFormat: topValue(eps, 'format'),
       topHook: topValue(eps, 'hookType'),
@@ -139,6 +129,51 @@ function buildChannelStats(episodes, channels = []) {
   });
 }
 
+// ── highlight cards ───────────────────────────────────────────────────────────
+
+function HighlightCard({ icon: Icon, iconColor, label, channelName, channelPalette, value, subvalue, tip }) {
+  return (
+    <div className="bg-th-surface border border-th-border rounded-xl p-4 flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${iconColor}`}>
+          <Icon size={14} className="text-white" />
+        </div>
+        <span className="text-th-tx3 text-xs font-medium">{label}</span>
+      </div>
+      <div>
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className={`w-2 h-2 rounded-full shrink-0 ${channelPalette.bar}`} />
+          <span className="text-th-tx1 text-sm font-semibold truncate">{channelName}</span>
+        </div>
+        <p className={`text-base font-bold tabular-nums ${channelPalette.text}`}>{value}</p>
+        {subvalue && <p className="text-th-tx4 text-[11px] mt-0.5">{subvalue}</p>}
+      </div>
+      {tip && <p className="text-th-tx3 text-[11px] leading-relaxed border-t border-th-border pt-2">{tip}</p>}
+    </div>
+  );
+}
+
+function buildHighlights(channelStats) {
+  const withSubs = channelStats.filter(c => c.subscriberCount > 0);
+  const withGrowth = channelStats.filter(c => c.growthPct !== null);
+  const withVps = channelStats.filter(c => c.viewsPerSub !== null);
+
+  const topViews   = [...channelStats].sort((a, b) => b.avgViews - a.avgViews)[0];
+  const topGrowth  = withGrowth.length ? [...withGrowth].sort((a, b) => b.growthPct - a.growthPct)[0] : null;
+  const topVps     = withVps.length ? [...withVps].sort((a, b) => b.viewsPerSub - a.viewsPerSub)[0] : null;
+  const topEngage  = [...channelStats].sort((a, b) => b.engagementRate - a.engagementRate)[0];
+  const topPpm     = channelStats.filter(c => c.ppm).sort((a, b) => b.ppm - a.ppm)[0];
+
+  // Overperformer: highest viewsPerSub among channels with <median subs
+  const medianSubs = withSubs.length
+    ? [...withSubs].sort((a, b) => a.subscriberCount - b.subscriberCount)[Math.floor(withSubs.length / 2)]?.subscriberCount
+    : null;
+  const smallChannels = medianSubs ? withVps.filter(c => c.subscriberCount < medianSubs) : [];
+  const overperformer = smallChannels.length > 1 ? [...smallChannels].sort((a, b) => b.viewsPerSub - a.viewsPerSub)[0] : null;
+
+  return { topViews, topGrowth, topVps, topEngage, topPpm, overperformer };
+}
+
 // ── sort icon ─────────────────────────────────────────────────────────────────
 
 function SortIcon({ col, sortCol, dir }) {
@@ -146,101 +181,45 @@ function SortIcon({ col, sortCol, dir }) {
   return dir === 'asc' ? <ChevronUp size={11} className="text-th-accent" /> : <ChevronDown size={11} className="text-th-accent" />;
 }
 
-// ── dimension comparison chart ────────────────────────────────────────────────
-
-function DimCompare({ title, dimKey, channelStats }) {
-  // Collect all values across all channels
-  const allValues = [...new Set(
-    channelStats.flatMap(ch => ch.episodes.map(e => e.dimensions?.[dimKey]).filter(Boolean))
-  )];
-  if (!allValues.length) return null;
-
-  // For each value, avg views per channel
-  const rows = allValues.map(val => {
-    const perChannel = channelStats.map(ch => {
-      const eps = ch.episodes.filter(e => e.dimensions?.[dimKey] === val && e.viewCount > 0);
-      return { channelId: ch.channelId, name: ch.name, paletteIdx: ch.paletteIdx, avgViews: avg(eps.map(e => e.viewCount)), count: eps.length };
-    }).filter(c => c.count > 0);
-    const maxViews = Math.max(...perChannel.map(c => c.avgViews), 1);
-    return { val, perChannel, maxViews };
-  }).sort((a, b) => Math.max(...b.perChannel.map(c => c.avgViews)) - Math.max(...a.perChannel.map(c => c.avgViews)));
-
-  const label = (v) => DIM_LABELS[dimKey]?.[v] || v;
-  const chipColor = DIM_COLORS[rows[0]?.val] || 'bg-th-raised text-th-tx2 border-th-border';
-
-  return (
-    <div className="bg-th-surface border border-th-border rounded-xl p-5">
-      <p className="text-th-tx1 text-sm font-semibold mb-4">{title}</p>
-      <div className="space-y-4">
-        {rows.slice(0, 6).map(({ val, perChannel, maxViews }) => (
-          <div key={val}>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${DIM_COLORS[val] || 'bg-th-raised text-th-tx2 border-th-border'}`}>
-                {label(val)}
-              </span>
-            </div>
-            <div className="space-y-1">
-              {perChannel.map(ch => {
-                const pal = CHANNEL_PALETTE[ch.paletteIdx];
-                const w = maxViews > 0 ? (ch.avgViews / maxViews) * 100 : 0;
-                return (
-                  <div key={ch.channelId} className="flex items-center gap-2">
-                    <span className="text-th-tx4 text-[11px] w-24 truncate shrink-0">{ch.name}</span>
-                    <div className="flex-1 h-1.5 bg-th-raised rounded-full overflow-hidden">
-                      <div className={`h-full ${pal.bar} rounded-full transition-all`} style={{ width: `${w}%` }} />
-                    </div>
-                    <span className={`text-[11px] tabular-nums w-10 text-right ${pal.text}`}>{fmt(ch.avgViews)}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ── AI insights display ───────────────────────────────────────────────────────
 
 function InsightsPanel({ insights }) {
   return (
     <div className="space-y-6">
-      {/* Niche patterns */}
-      <div>
-        <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
-          <TrendingUp size={14} className="text-th-accent" /> Niche Patterns
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {insights.nichePatterns?.map((p, i) => (
-            <div key={i} className="bg-th-surface border border-th-border rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${p.strength === 'strong' ? 'bg-th-accent/10 text-th-accent border-th-accent/25' : 'bg-th-raised text-th-tx2 border-th-border'}`}>
-                  {p.strength}
-                </span>
-                <p className="text-th-tx1 text-xs font-medium">{p.title}</p>
+      {insights.nichePatterns?.length > 0 && (
+        <div>
+          <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
+            <TrendingUp size={14} className="text-th-accent" /> What's working in this niche
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {insights.nichePatterns.map((p, i) => (
+              <div key={i} className="bg-th-surface border border-th-border rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${p.strength === 'strong' ? 'bg-th-accent/10 text-th-accent border-th-accent/25' : 'bg-th-raised text-th-tx2 border-th-border'}`}>
+                    {p.strength}
+                  </span>
+                  <p className="text-th-tx1 text-xs font-medium">{p.title}</p>
+                </div>
+                <p className="text-th-tx2 text-xs leading-relaxed">{p.detail}</p>
               </div>
-              <p className="text-th-tx2 text-xs leading-relaxed">{p.detail}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Top channel edge */}
       {insights.topChannelEdge && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-5">
           <h3 className="text-amber-300 text-sm font-semibold mb-2 flex items-center gap-2">
-            <Zap size={13} /> What sets {insights.topChannelEdge.channelName} apart
+            <Zap size={13} /> Why {insights.topChannelEdge.channelName} is winning
           </h3>
           <p className="text-amber-200/80 text-sm leading-relaxed">{insights.topChannelEdge.whatSetsItApart}</p>
         </div>
       )}
 
-      {/* Gaps */}
       {insights.gaps?.length > 0 && (
         <div>
           <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
-            <Target size={14} className="text-emerald-400" /> Gaps & Opportunities
+            <Target size={14} className="text-emerald-400" /> Gaps nobody is owning
           </h3>
           <div className="space-y-3">
             {insights.gaps.map((g, i) => (
@@ -253,11 +232,10 @@ function InsightsPanel({ insights }) {
         </div>
       )}
 
-      {/* New channel playbook */}
       {insights.newChannelPlaybook?.length > 0 && (
         <div>
           <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
-            <Sparkles size={14} className="text-th-accent" /> New Channel Playbook
+            <BookOpen size={14} className="text-th-accent" /> What to steal for your channel
           </h3>
           <div className="bg-th-surface border border-th-border rounded-xl divide-y divide-th-border">
             {insights.newChannelPlaybook.map((action, i) => (
@@ -305,7 +283,7 @@ function AddChannelForm({ onAdded, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleAdd} className="flex items-center gap-2">
+    <form onSubmit={handleAdd} className="flex items-center gap-2 flex-wrap">
       <input
         type="text"
         value={url}
@@ -332,22 +310,23 @@ function AddChannelForm({ onAdded, onCancel }) {
   );
 }
 
-// ── main page ─────────────────────────────────────────────────────────────────
+// ── table ─────────────────────────────────────────────────────────────────────
 
 const TABLE_COLS = [
-  { key: 'name',            label: 'Channel',      sortable: true },
-  { key: 'subscriberCount', label: 'Subscribers',  sortable: true },
-  { key: 'channelCreatedAt',label: 'Age',          sortable: true },
-  { key: 'episodeCount',    label: 'Episodes',     sortable: true },
-  { key: 'avgViews',        label: 'Avg Views',    sortable: true },
-  { key: 'viewsPerSub',     label: 'Views/Sub',    sortable: true },
-  { key: 'growthPct',       label: 'Trend',        sortable: true },
-  { key: 'engagementRate',  label: 'Engagement',   sortable: true },
-  { key: 'ppm',             label: 'Posts/Mo',     sortable: true },
-  { key: 'topFormat',       label: 'Top Format',   sortable: false },
-  { key: 'topHook',         label: 'Top Hook',     sortable: false },
-  { key: 'topContent',      label: 'Top Content',  sortable: false },
+  { key: 'name',            label: 'Channel',     sortable: true },
+  { key: 'subscriberCount', label: 'Subscribers', sortable: true },
+  { key: 'channelCreatedAt',label: 'Age',         sortable: true },
+  { key: 'episodeCount',    label: 'Episodes',    sortable: true },
+  { key: 'ppm',             label: 'Posts/Mo',    sortable: true },
+  { key: 'avgViews',        label: 'Avg Views',   sortable: true },
+  { key: 'viewsPerSub',     label: 'Views/Sub',   sortable: true },
+  { key: 'growthPct',       label: 'Trend',       sortable: true },
+  { key: 'engagementRate',  label: 'Engagement',  sortable: true },
+  { key: 'topFormat',       label: 'Top Format',  sortable: false },
+  { key: 'topHook',         label: 'Top Hook',    sortable: false },
 ];
+
+// ── main ──────────────────────────────────────────────────────────────────────
 
 export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
   const [sortCol, setSortCol] = useState('avgViews');
@@ -362,8 +341,9 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
   }, []);
 
   const channelStats = useMemo(() => buildChannelStats(episodes, channels), [episodes, channels]);
+  const highlights = useMemo(() => buildHighlights(channelStats), [channelStats]);
 
-  const handleChannelAdded = (channel) => {
+  const handleChannelAdded = () => {
     setShowAddForm(false);
     onChannelsLoaded?.();
   };
@@ -387,21 +367,23 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
     setGenerating(true);
     setInsightError('');
     try {
-      // Build lightweight stats payload for Claude
       const payload = channelStats.map(ch => ({
         name: ch.name,
+        subscriberCount: ch.subscriberCount,
+        channelAgeYears: ch.channelCreatedAt
+          ? parseFloat(((Date.now() - new Date(ch.channelCreatedAt)) / (1000 * 60 * 60 * 24 * 365.25)).toFixed(1))
+          : null,
         episodeCount: ch.episodeCount,
         analysedCount: ch.analysedCount,
         avgViews: Math.round(ch.avgViews),
-        avgLikes: Math.round(ch.avgLikes),
-        avgComments: Math.round(ch.avgComments),
+        viewsPerSubscriber: ch.viewsPerSub ? parseFloat(ch.viewsPerSub.toFixed(3)) : null,
+        growthPct: ch.growthPct ? parseFloat(ch.growthPct.toFixed(1)) : null,
         engagementRate: parseFloat((ch.engagementRate * 100).toFixed(2)),
         postsPerMonth: ch.ppm,
         topFormat: ch.topFormat,
         topHook: ch.topHook,
         topContent: ch.topContent,
         topTone: ch.topTone,
-        // Top 3 episodes by views
         topEpisodes: [...ch.episodes]
           .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
           .slice(0, 3)
@@ -427,7 +409,7 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
         <GitCompare size={36} className="text-th-raised mb-4" />
         <p className="text-th-tx2 text-sm font-medium mb-2">Add at least 2 channels to compare</p>
         <p className="text-th-tx4 text-xs max-w-xs leading-relaxed mb-6">
-          Add your channel plus competitors or channels in your niche.
+          Add your channel plus competitors or channels in your niche to learn what's working.
         </p>
         {showAddForm ? (
           <AddChannelForm onAdded={handleChannelAdded} onCancel={() => setShowAddForm(false)} />
@@ -443,6 +425,8 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
     );
   }
 
+  const { topViews, topGrowth, topVps, topEngage, overperformer } = highlights;
+
   return (
     <div className="flex flex-col h-full overflow-auto">
       {/* Header */}
@@ -451,7 +435,7 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
           <div>
             <h1 className="text-th-tx1 font-semibold text-lg flex items-center gap-2">
               <GitCompare size={17} className="text-th-accent" />
-              Channel Comparison
+              Niche Research
             </h1>
             <p className="text-th-tx3 text-xs mt-0.5">
               {totalChannels} channels · {totalEpisodes} episodes · {analysedEpisodes} analysed
@@ -460,11 +444,11 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
           <button
             onClick={handleGenerate}
             disabled={generating || analysedEpisodes < 3}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-th-accent hover:bg-th-accent disabled:opacity-40 disabled:cursor-not-allowed text-th-tx1 text-sm transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-th-accent hover:bg-th-accentH disabled:opacity-40 disabled:cursor-not-allowed text-th-accentFg text-sm transition-colors"
           >
             {generating
               ? <><Loader2 size={14} className="animate-spin" />Analysing…</>
-              : <><Sparkles size={14} />{insights ? 'Regenerate' : 'AI Analysis'}</>}
+              : <><Sparkles size={14} />{insights ? 'Regenerate' : 'What can I steal?'}</>}
           </button>
         </div>
 
@@ -493,7 +477,72 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
       </div>
 
       <div className="flex-1 overflow-auto">
-        {/* Metrics table */}
+
+        {/* ── Highlight cards ── */}
+        <div className="px-6 pt-6 pb-2">
+          <p className="text-th-tx3 text-xs font-medium uppercase tracking-wider mb-3">Leaders in this niche</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {topViews && (
+              <HighlightCard
+                icon={Trophy} iconColor="bg-amber-500"
+                label="Most views per episode"
+                channelName={topViews.name}
+                channelPalette={CHANNEL_PALETTE[topViews.paletteIdx]}
+                value={fmt(topViews.avgViews)}
+                subvalue={`${fmt(topViews.subscriberCount)} subscribers`}
+                tip={topViews.topHook ? `Top hook: ${DIM_LABELS.hookType[topViews.topHook] || topViews.topHook}` : null}
+              />
+            )}
+            {topGrowth && (
+              <HighlightCard
+                icon={ArrowUpRight} iconColor="bg-emerald-500"
+                label="Fastest growing right now"
+                channelName={topGrowth.name}
+                channelPalette={CHANNEL_PALETTE[topGrowth.paletteIdx]}
+                value={`${topGrowth.growthPct >= 0 ? '+' : ''}${topGrowth.growthPct.toFixed(0)}%`}
+                subvalue="recent 10 vs previous 10 episodes"
+                tip={topGrowth.topFormat ? `Format: ${DIM_LABELS.format[topGrowth.topFormat] || topGrowth.topFormat}` : null}
+              />
+            )}
+            {topVps && (
+              <HighlightCard
+                icon={Users} iconColor="bg-sky-500"
+                label="Best views per subscriber"
+                channelName={topVps.name}
+                channelPalette={CHANNEL_PALETTE[topVps.paletteIdx]}
+                value={`${topVps.viewsPerSub.toFixed(2)}x`}
+                subvalue="views per subscriber per episode"
+                tip="High ratio = content resonates beyond their existing audience"
+              />
+            )}
+            {overperformer ? (
+              <HighlightCard
+                icon={Zap} iconColor="bg-pink-500"
+                label="Small channel, big results"
+                channelName={overperformer.name}
+                channelPalette={CHANNEL_PALETTE[overperformer.paletteIdx]}
+                value={`${overperformer.viewsPerSub.toFixed(2)}x`}
+                subvalue={`only ${fmt(overperformer.subscriberCount)} subscribers`}
+                tip="Study this channel — their content formula works without a big audience"
+              />
+            ) : topEngage && (
+              <HighlightCard
+                icon={BarChart2} iconColor="bg-purple-500"
+                label="Most engaging audience"
+                channelName={topEngage.name}
+                channelPalette={CHANNEL_PALETTE[topEngage.paletteIdx]}
+                value={pct(topEngage.engagementRate)}
+                subvalue="likes + comments / views"
+                tip={topEngage.topContent ? `Content type: ${DIM_LABELS.contentType[topEngage.topContent] || topEngage.topContent}` : null}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* ── Stats table ── */}
+        <div className="px-6 pt-6 pb-2">
+          <p className="text-th-tx3 text-xs font-medium uppercase tracking-wider mb-3">All channels</p>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse min-w-[900px]">
             <thead className="sticky top-0 bg-th-bg z-10">
@@ -513,21 +562,20 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((ch, rowIdx) => {
+              {sorted.map(ch => {
                 const pal = CHANNEL_PALETTE[ch.paletteIdx];
-                const isTop = rowIdx === 0 && sortCol === 'avgViews';
                 return (
-                  <tr key={ch.channelId} className={`border-b border-th-border/60 transition-colors ${isTop ? 'bg-th-accent/5' : 'hover:bg-th-surface/40'}`}>
+                  <tr key={ch.channelId} className="border-b border-th-border/60 hover:bg-th-surface/40 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full shrink-0 ${pal.bar}`} />
                         <span className="text-th-tx1 text-xs font-medium truncate max-w-[160px]">{ch.name}</span>
-                        {isTop && <span className="text-[10px] text-th-accent bg-th-accent/10 border border-th-accent/20 px-1.5 py-0.5 rounded-full">Top</span>}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{fmt(ch.subscriberCount)}</td>
                     <td className="px-4 py-3 text-th-tx3 text-xs">{channelAge(ch.channelCreatedAt)}</td>
                     <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{ch.episodeCount}</td>
+                    <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{ch.ppm || '—'}</td>
                     <td className={`px-4 py-3 text-xs tabular-nums font-medium ${pal.text}`}>{fmt(ch.avgViews)}</td>
                     <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{ch.viewsPerSub ? ch.viewsPerSub.toFixed(2) : '—'}</td>
                     <td className="px-4 py-3 text-xs tabular-nums">
@@ -538,7 +586,6 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
                       ) : <span className="text-th-tx4">—</span>}
                     </td>
                     <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{pct(ch.engagementRate)}</td>
-                    <td className="px-4 py-3 text-th-tx2 text-xs tabular-nums">{ch.ppm || '—'}</td>
                     <td className="px-4 py-3">
                       {ch.topFormat ? (
                         <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${DIM_COLORS[ch.topFormat] || 'bg-th-raised text-th-tx2 border-th-border'}`}>
@@ -553,13 +600,6 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
                         </span>
                       ) : <span className="text-th-tx4 text-xs">—</span>}
                     </td>
-                    <td className="px-4 py-3">
-                      {ch.topContent ? (
-                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${DIM_COLORS[ch.topContent] || 'bg-th-raised text-th-tx2 border-th-border'}`}>
-                          {DIM_LABELS.contentType[ch.topContent] || ch.topContent}
-                        </span>
-                      ) : <span className="text-th-tx4 text-xs">—</span>}
-                    </td>
                   </tr>
                 );
               })}
@@ -567,23 +607,9 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
           </table>
         </div>
 
-        {/* Dimension comparison charts */}
-        {analysedEpisodes >= 2 && (
-          <div className="px-6 py-8 border-t border-th-border">
-            <h2 className="text-th-tx1 font-semibold text-base mb-1">Performance by Dimension</h2>
-            <p className="text-th-tx3 text-xs mb-6">Average views for each dimension value, broken down by channel.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <DimCompare title="Format" dimKey="format" channelStats={channelStats} />
-              <DimCompare title="Hook Type" dimKey="hookType" channelStats={channelStats} />
-              <DimCompare title="Content Type" dimKey="contentType" channelStats={channelStats} />
-              <DimCompare title="Emotional Tone" dimKey="emotionalTone" channelStats={channelStats} />
-            </div>
-          </div>
-        )}
-
-        {/* AI analysis */}
+        {/* ── AI analysis ── */}
         {insightError && (
-          <div className="px-6 pb-6">
+          <div className="px-6 py-6">
             <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4">
               <AlertCircle size={15} className="text-red-400 shrink-0 mt-0.5" />
               <p className="text-red-300 text-sm">{insightError}</p>
@@ -593,8 +619,8 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
 
         {insights && (
           <div className="px-6 pb-10 border-t border-th-border pt-8">
-            <h2 className="text-th-tx1 font-semibold text-base mb-1">AI Cross-Channel Analysis</h2>
-            <p className="text-th-tx3 text-xs mb-6">Patterns, gaps, and a playbook for entering or winning in this niche.</p>
+            <h2 className="text-th-tx1 font-semibold text-base mb-1">What to steal from this niche</h2>
+            <p className="text-th-tx3 text-xs mb-6">AI analysis of patterns, gaps, and actionable lessons based on {analysedEpisodes} analysed episodes.</p>
             <InsightsPanel insights={insights} />
           </div>
         )}
@@ -603,7 +629,7 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
           <div className="px-6 py-8 border-t border-th-border">
             <div className="flex items-start gap-3 text-th-tx3 text-sm">
               <AlertCircle size={15} className="shrink-0 mt-0.5 text-amber-500" />
-              Analyse at least 3 episodes across your channels (on the Intelligence page) to unlock the AI cross-channel analysis.
+              Analyse at least 3 episodes across your channels on the Intelligence tab to unlock AI niche analysis.
             </div>
           </div>
         )}
