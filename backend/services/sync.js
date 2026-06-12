@@ -1,6 +1,6 @@
 import { getChannelVideosPage, getAllChannelVideos, getVideoDurations } from './youtube.js';
-import { downloadAudio, cleanupAudio } from './ytdlp.js';
-import { transcribeFile } from './transcribe.js';
+import { getAudioUrl, downloadAudio, cleanupAudio } from './ytdlp.js';
+import { transcribeUrl, transcribeFile } from './transcribe.js';
 import { analyseEpisode, analyseDimensions } from './analyse.js';
 import { getChannel, upsertChannel, upsertEpisode, getEpisodeByVideoId, getUserSettings, savePost } from './store.js';
 import { generatePosts } from './analyse.js';
@@ -46,8 +46,19 @@ async function processVideo(userId, video, channelId, channelName) {
 
   let audioPath = null;
   try {
-    audioPath = await downloadAudio(video.youtubeUrl, video.videoId);
-    const transcript = await transcribeFile(audioPath);
+    // Try URL-mode first: yt-dlp extracts direct stream URL, Deepgram fetches it
+    let transcript;
+    try {
+      console.log(`[sync:${userId}] Getting audio URL for: ${video.videoId}`);
+      const audioUrl = await getAudioUrl(video.youtubeUrl);
+      console.log(`[sync:${userId}] Transcribing via URL mode`);
+      transcript = await transcribeUrl(audioUrl);
+    } catch (urlErr) {
+      console.warn(`[sync:${userId}] URL mode failed (${urlErr.message}), falling back to download`);
+      audioPath = await downloadAudio(video.youtubeUrl, video.videoId);
+      transcript = await transcribeFile(audioPath);
+    }
+
     const [analysis, dimensions] = await Promise.all([
       analyseEpisode(transcript, video.title),
       analyseDimensions(transcript, video.title),
