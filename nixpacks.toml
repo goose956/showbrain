@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs_18", "npm-9_x", "yt-dlp", "ffmpeg"]
+nixPkgs = ["nodejs_22", "yt-dlp", "ffmpeg"]
 
 [phases.install]
 cmds = ["npm install"]
