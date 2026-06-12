@@ -111,7 +111,8 @@ function buildChannelStats(episodes, channels = []) {
     return {
       channelId, name, isPrimary,
       paletteIdx: idx % CHANNEL_PALETTE.length,
-      episodeCount: eps.length,
+      episodeCount: meta.videoCount || eps.length,
+      syncedCount: eps.length,
       analysedCount: eps.filter(e => e.dimensions).length,
       subscriberCount: subs,
       totalViewCount: meta.totalViewCount || 0,
