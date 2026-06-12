@@ -52,9 +52,9 @@ function SyncPill({ syncStatus, onNavigate }) {
 }
 
 const NAV_ITEMS = [
-  { id: 'overview',  label: 'Dashboard', icon: Gauge },
-  { id: 'channel',   label: 'Channel',   icon: TvMinimalPlay },
-  { id: 'dashboard', label: 'Library',   icon: LayoutDashboard },
+  { id: 'overview',  label: 'Dashboard', icon: Gauge,           iconBg: 'bg-rose-500',   iconColor: 'text-white' },
+  { id: 'channel',   label: 'Channel',   icon: TvMinimalPlay,   iconBg: 'bg-blue-500',   iconColor: 'text-white' },
+  { id: 'dashboard', label: 'Library',   icon: LayoutDashboard, iconBg: 'bg-indigo-500', iconColor: 'text-white' },
 ];
 
 export default function Topbar({ currentUser, isAdmin, onLogout, onNavigate, syncStatus, activePage }) {
@@ -100,7 +100,7 @@ export default function Topbar({ currentUser, isAdmin, onLogout, onNavigate, syn
 
       {/* ── Primary nav ────────────────────────────────────────────── */}
       <div className="flex items-center gap-1">
-        {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+        {NAV_ITEMS.map(({ id, label, icon: Icon, iconBg, iconColor }) => {
           const active = activePage === id;
           return (
             <button
@@ -112,7 +112,9 @@ export default function Topbar({ currentUser, isAdmin, onLogout, onNavigate, syn
                   : 'text-th-tx3 hover:text-th-tx1 hover:bg-th-raised border border-transparent'
               }`}
             >
-              <Icon size={16} />
+              <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${iconBg} ${active ? 'opacity-100' : 'opacity-70'}`}>
+                <Icon size={13} className={iconColor} />
+              </span>
               {label}
             </button>
           );
