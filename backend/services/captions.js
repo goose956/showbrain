@@ -1,7 +1,7 @@
 import { YoutubeTranscript } from 'youtube-transcript';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function fetchCaptions(videoId) {
   const segments = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
@@ -19,8 +19,8 @@ export async function fetchCaptions(videoId) {
 }
 
 export async function cleanupCaptions(rawText, title) {
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
+  const response = await client.chat.completions.create({
+    model: 'gpt-4o-mini',
     max_tokens: 8192,
     messages: [
       {
@@ -40,7 +40,7 @@ ${rawText}`,
     ],
   });
 
-  const cleaned = response.content?.[0]?.text?.trim();
-  if (!cleaned) throw new Error('Claude returned no cleaned transcript');
+  const cleaned = response.choices?.[0]?.message?.content?.trim();
+  if (!cleaned) throw new Error('OpenAI returned no cleaned transcript');
   return cleaned;
 }
