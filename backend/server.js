@@ -9,7 +9,7 @@ import { randomUUID } from 'crypto';
 import { initSchema } from './services/db.js';
 import { resolveChannelId, getChannelInfo, getChannelVideosPage, getAllChannelVideos, getVideoDurations } from './services/youtube.js';
 import { syncChannel, getSyncState } from './services/sync.js';
-import { getChannels, getChannel, upsertChannel, deleteChannel, getEpisodes, getEpisodeByVideoId, getClicks, logClick, addWaitlistEmail, upsertEpisode, getMembers, getMemberById, getMemberByUsername, createMember, deleteMember, getUserSettings, setUserSettings, getPosts, savePost, updatePostStatus, deletePost } from './services/store.js';
+import { getChannels, getChannel, upsertChannel, deleteChannel, getEpisodes, getEpisodeByVideoId, getClicks, logClick, addWaitlistEmail, upsertEpisode, getMembers, getMemberById, getMemberByUsername, createMember, deleteMember, getUserSettings, setUserSettings, getPosts, savePost, updatePostStatus, deletePost, getIdeas, saveIdeas, deleteIdeas, getScripts, saveScript, deleteScript } from './services/store.js';
 import { generatePosts } from './services/analyse.js';
 import { hashPassword, verifyPassword, createToken, verifyToken } from './services/auth.js';
 import aiRoutes from './routes/ai.js';
@@ -358,6 +358,55 @@ app.patch('/api/posts/:id/status', async (req, res) => {
 app.delete('/api/posts/:id', async (req, res) => {
   try {
     await deletePost(req.userId, req.params.id);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── ideas ─────────────────────────────────────────────────────────────────────
+
+app.get('/api/ideas', async (req, res) => {
+  try {
+    const result = await getIdeas(req.userId);
+    res.json(result || { ideas: null });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/ideas', async (req, res) => {
+  const { ideas } = req.body;
+  if (!ideas) return res.status(400).json({ error: 'ideas required' });
+  try {
+    await saveIdeas(req.userId, ideas);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/ideas', async (req, res) => {
+  try {
+    await deleteIdeas(req.userId);
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ── scripts ───────────────────────────────────────────────────────────────────
+
+app.get('/api/scripts', async (req, res) => {
+  try {
+    res.json(await getScripts(req.userId));
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/scripts', async (req, res) => {
+  const { id, brief, dataBrief, script } = req.body;
+  if (!id || !script) return res.status(400).json({ error: 'id and script required' });
+  try {
+    await saveScript(req.userId, { id, brief, dataBrief, script });
+    res.json({ ok: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/scripts/:id', async (req, res) => {
+  try {
+    await deleteScript(req.userId, req.params.id);
     res.json({ ok: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

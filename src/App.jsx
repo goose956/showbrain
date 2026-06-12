@@ -32,6 +32,7 @@ export default function App() {
   const [channels, setChannels] = useState([]);
   const [episodes, setEpisodes] = useState([]);
   const [scriptBrief, setScriptBrief] = useState(null);
+  const [episodeIdeas, setEpisodeIdeas] = useState(null);
   const [authScreen, setAuthScreen] = useState('home');
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -180,7 +181,7 @@ export default function App() {
           setChannels(chs.map(ch => ({ ...ch, transcribedCount: episodes.filter(e => e.channelId === ch.id && e.transcript).length })))
         ).catch(() => {});
       }} />;
-      case 'ideas':        return <Ideas episodes={episodes} onWriteScript={handleWriteScript} />;
+      case 'ideas':        return <Ideas episodes={episodes} onWriteScript={handleWriteScript} ideas={episodeIdeas} onIdeasUpdate={setEpisodeIdeas} />;
       case 'scriptwriter': return <ScriptWriter key={scriptBrief} episodes={episodes} initialBrief={scriptBrief} />;
       case 'queue':        return <PostQueue episodes={episodes} />;
       case 'settings':     return <Settings />;

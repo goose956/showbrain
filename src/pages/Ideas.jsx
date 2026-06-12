@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Sparkles, Loader2, AlertCircle, RefreshCw, PenLine, TrendingUp, ArrowRight, Lightbulb } from 'lucide-react';
-import { generateEpisodeIdeas } from '../lib/claude';
+import { useState, useEffect } from 'react';
+import { Sparkles, Loader2, AlertCircle, RefreshCw, PenLine, TrendingUp, ArrowRight, Lightbulb, Trash2 } from 'lucide-react';
+import { generateEpisodeIdeas, fetchSavedIdeas, persistIdeas, clearIdeas } from '../lib/claude';
 
 const TYPE_META = {
   gap:        { label: 'Gap',        color: 'bg-th-accent/10 text-th-accent border-th-accent/20' },
@@ -94,10 +94,17 @@ function IdeaCard({ idea, onWriteScript }) {
 
 export default function Ideas({ episodes, onWriteScript }) {
   const [ideas, setIdeas] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const hasEnoughData = episodes.filter(ep => ep.dimensions).length >= 3;
+
+  useEffect(() => {
+    fetchSavedIdeas()
+      .then(saved => { if (saved) setIdeas(saved); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -105,10 +112,20 @@ export default function Ideas({ episodes, onWriteScript }) {
     try {
       const result = await generateEpisodeIdeas(episodes);
       setIdeas(result);
+      await persistIdeas(result);
     } catch (e) {
       setError(e.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClear = async () => {
+    try {
+      await clearIdeas();
+      setIdeas(null);
+    } catch (e) {
+      setError(e.message);
     }
   };
 
@@ -128,15 +145,26 @@ export default function Ideas({ episodes, onWriteScript }) {
               Claude analyses your channel patterns and suggests what to make next — and why it'll perform.
             </p>
           </div>
-          <button
-            onClick={handleGenerate}
-            disabled={loading || !hasEnoughData}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-th-accent hover:bg-th-accentH disabled:opacity-40 disabled:cursor-not-allowed text-th-accentFg text-sm transition-colors"
-          >
-            {loading
-              ? <><Loader2 size={14} className="animate-spin" />Generating…</>
-              : <><Sparkles size={14} />{ideas ? 'Regenerate' : 'Generate Ideas'}</>}
-          </button>
+          <div className="flex items-center gap-2">
+            {ideas && (
+              <button
+                onClick={handleClear}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-th-border text-th-tx4 hover:text-red-400 hover:border-red-500/30 text-xs transition-colors"
+              >
+                <Trash2 size={13} />
+                Clear
+              </button>
+            )}
+            <button
+              onClick={handleGenerate}
+              disabled={loading || !hasEnoughData}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-th-accent hover:bg-th-accentH disabled:opacity-40 disabled:cursor-not-allowed text-th-accentFg text-sm transition-colors"
+            >
+              {loading
+                ? <><Loader2 size={14} className="animate-spin" />Generating…</>
+                : <><Sparkles size={14} />{ideas ? 'Regenerate' : 'Generate Ideas'}</>}
+            </button>
+          </div>
         </div>
 
         {!hasEnoughData && (
@@ -170,7 +198,7 @@ export default function Ideas({ episodes, onWriteScript }) {
           </div>
         )}
 
-        {loading && (
+        {loading && !ideas && (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
             <Loader2 size={24} className="text-th-accent animate-spin" />
             <div className="text-center">

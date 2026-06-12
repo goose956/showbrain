@@ -81,3 +81,54 @@ export async function generateChannelInsights(episodes) {
   const { insights } = await post('/api/ai/channel-insights', { episodes });
   return insights;
 }
+
+// ── Persisted Insights (stored in user settings) ─────────────────────────────
+export async function fetchSavedInsights(key) {
+  const res = await apiFetch('/api/settings');
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data[key] || null;
+}
+
+export async function persistInsights(key, insights) {
+  const res = await apiFetch('/api/settings');
+  const current = res.ok ? await res.json() : {};
+  await apiFetch('/api/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...current, [key]: insights }),
+  });
+}
+
+// ── Persisted Ideas ───────────────────────────────────────────────────────────
+export async function fetchSavedIdeas() {
+  const res = await apiFetch('/api/ideas');
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.ideas || null;
+}
+
+export async function persistIdeas(ideas) {
+  await post('/api/ideas', { ideas });
+}
+
+export async function clearIdeas() {
+  const res = await apiFetch('/api/ideas', { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to clear ideas');
+}
+
+// ── Persisted Scripts ─────────────────────────────────────────────────────────
+export async function fetchSavedScripts() {
+  const res = await apiFetch('/api/scripts');
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function persistScript(id, brief, dataBrief, script) {
+  await post('/api/scripts', { id, brief, dataBrief, script });
+}
+
+export async function removeScript(id) {
+  const res = await apiFetch(`/api/scripts/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to delete script');
+}

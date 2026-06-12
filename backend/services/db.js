@@ -90,6 +90,22 @@ export async function initSchema() {
 
     CREATE INDEX IF NOT EXISTS posts_user_episode ON posts (user_id, episode_id);
 
+    CREATE TABLE IF NOT EXISTS ideas (
+      user_id     TEXT PRIMARY KEY REFERENCES members(id) ON DELETE CASCADE,
+      ideas       JSONB NOT NULL DEFAULT '[]',
+      generated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS scripts (
+      id          TEXT NOT NULL,
+      user_id     TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      brief       TEXT,
+      data_brief  JSONB,
+      script      JSONB,
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (id, user_id)
+    );
+
     CREATE TABLE IF NOT EXISTS clicks (
       id            TEXT PRIMARY KEY,
       user_id       TEXT NOT NULL,

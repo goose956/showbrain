@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import {
   Sparkles, Loader2, AlertCircle, RefreshCw, ChevronDown, ChevronUp,
-  PenLine, Check, X, RotateCcw, Clock, Mic, BookOpen,
+  PenLine, Check, X, RotateCcw, Clock, Mic, BookOpen, Trash2, FileText, Plus,
 } from 'lucide-react';
 import {
   analyseEpisodeDataForScript,
   generateEpisodeScript,
   regenerateScriptSection,
+  fetchSavedScripts,
+  persistScript,
+  removeScript,
 } from '../lib/claude';
 
 const SECTION_COLORS = {
@@ -63,11 +66,39 @@ function InlineError({ message, onRetry }) {
   );
 }
 
-function BriefInput({ onSubmit }) {
+function SavedScriptsList({ scripts, onLoad, onDelete }) {
+  if (!scripts.length) return null;
+  return (
+    <div className="mb-8">
+      <h2 className="text-th-tx1 text-sm font-semibold mb-3">Saved Scripts</h2>
+      <div className="space-y-2">
+        {scripts.map(s => (
+          <div key={s.id} className="flex items-center justify-between gap-3 bg-th-surface border border-th-border rounded-xl px-4 py-3 hover:border-th-accent/30 transition-colors">
+            <div className="flex items-center gap-3 min-w-0 cursor-pointer flex-1" onClick={() => onLoad(s)}>
+              <FileText size={14} className="text-th-accent shrink-0" />
+              <div className="min-w-0">
+                <p className="text-th-tx1 text-sm font-medium truncate">{s.script?.title || s.brief}</p>
+                <p className="text-th-tx4 text-xs mt-0.5">{new Date(s.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => onDelete(s.id)}
+              className="shrink-0 p-1.5 text-th-tx4 hover:text-red-400 transition-colors"
+            >
+              <Trash2 size={13} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BriefInput({ onSubmit, scripts, onLoad, onDelete }) {
   const [brief, setBrief] = useState('');
   return (
-    <div className="flex flex-col items-center justify-center h-full px-4">
-      <div className="w-full max-w-xl">
+    <div className="flex flex-col h-full overflow-auto px-4 py-8">
+      <div className="w-full max-w-xl mx-auto">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-th-accent/10 border border-th-accent/20 flex items-center justify-center">
             <PenLine size={18} className="text-th-accent" />
@@ -77,6 +108,8 @@ function BriefInput({ onSubmit }) {
             <p className="text-th-tx3 text-xs">AI writes your next episode using patterns from your best-performing content.</p>
           </div>
         </div>
+
+        <SavedScriptsList scripts={scripts} onLoad={onLoad} onDelete={onDelete} />
 
         <label className="text-xs text-th-tx3 font-medium mb-2 block">What's your next episode about?</label>
         <textarea
@@ -310,20 +343,38 @@ function SectionCard({ section, brief, dataBrief, hostVoiceSample, onUpdate }) {
   );
 }
 
-function ScriptDisplay({ script, brief, dataBrief, hostVoiceSample, onUpdate, onBack }) {
+function ScriptDisplay({ script, brief, dataBrief, hostVoiceSample, onUpdate, onBack, onDelete, scriptId }) {
   const [title, setTitle] = useState(script.title);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(script.title);
   const [sections, setSections] = useState(script.sections);
 
   const updateSection = (idx, updated) => {
-    const next = [...sections]; next[idx] = updated; setSections(next); onUpdate({ ...script, sections: next });
+    const next = [...sections]; next[idx] = updated; setSections(next);
+    const updatedScript = { ...script, sections: next };
+    onUpdate(updatedScript);
+    persistScript(scriptId, brief, dataBrief, updatedScript).catch(() => {});
   };
-  const saveTitle = () => { setTitle(titleDraft); setEditingTitle(false); };
+
+  const saveTitle = () => {
+    setTitle(titleDraft);
+    setEditingTitle(false);
+    const updatedScript = { ...script, title: titleDraft };
+    onUpdate(updatedScript);
+    persistScript(scriptId, brief, dataBrief, updatedScript).catch(() => {});
+  };
 
   return (
     <div className="max-w-2xl mx-auto py-10 px-4">
-      <button onClick={onBack} className="text-th-tx4 hover:text-th-tx2 text-xs mb-6 transition-colors">← Back to data brief</button>
+      <div className="flex items-center justify-between mb-6">
+        <button onClick={onBack} className="text-th-tx4 hover:text-th-tx2 text-xs transition-colors">← Back to data brief</button>
+        <button
+          onClick={() => onDelete(scriptId)}
+          className="flex items-center gap-1.5 text-xs text-th-tx4 hover:text-red-400 transition-colors"
+        >
+          <Trash2 size={12} /> Delete script
+        </button>
+      </div>
 
       <div className="bg-th-surface border border-th-border rounded-xl p-5 mb-6">
         <div className="flex items-start justify-between gap-3 mb-3">
@@ -367,14 +418,6 @@ function ScriptDisplay({ script, brief, dataBrief, hostVoiceSample, onUpdate, on
         </div>
       </div>
 
-      <div className="mb-6 group relative">
-        <button disabled
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-th-border text-th-tx4 text-sm cursor-not-allowed bg-th-raised/50">
-          <Sparkles size={14} />
-          Generate All Assets — Show Notes, Social Posts &amp; Newsletter →
-        </button>
-      </div>
-
       <div className="space-y-5">
         {sections.map((section, i) => (
           <SectionCard key={i} section={section} brief={brief} dataBrief={dataBrief} hostVoiceSample={hostVoiceSample} onUpdate={(u) => updateSection(i, u)} />
@@ -385,13 +428,18 @@ function ScriptDisplay({ script, brief, dataBrief, hostVoiceSample, onUpdate, on
 }
 
 export default function ScriptWriter({ episodes, initialBrief = null }) {
-  const [stage, setStage] = useState('brief');
+  const [stage, setStage] = useState('list');
   const [brief, setBrief] = useState('');
   const [dataBrief, setDataBrief] = useState(null);
   const [script, setScript] = useState(null);
+  const [scriptId, setScriptId] = useState(null);
   const [error, setError] = useState('');
+  const [savedScripts, setSavedScripts] = useState([]);
 
-  useEffect(() => { if (initialBrief) handleBriefSubmit(initialBrief); }, []);
+  useEffect(() => {
+    fetchSavedScripts().then(setSavedScripts).catch(() => {});
+    if (initialBrief) handleBriefSubmit(initialBrief);
+  }, []);
 
   const relatedEpisodes = dataBrief?.topicHistory
     ? dataBrief.topicHistory.map(h => episodes.find(ep => ep.id === h.episodeId || ep.title === h.title)).filter(Boolean)
@@ -404,15 +452,34 @@ export default function ScriptWriter({ episodes, initialBrief = null }) {
     try {
       const result = await analyseEpisodeDataForScript(text, episodes);
       setDataBrief(result); setStage('data-brief');
-    } catch (e) { setError(e.message); setStage('brief'); }
+    } catch (e) { setError(e.message); setStage('list'); }
   };
 
   const handleProceed = async (approvedBrief) => {
     setDataBrief(approvedBrief); setError(''); setStage('writing');
     try {
       const result = await generateEpisodeScript(brief, approvedBrief, relatedEpisodes);
-      setScript(result); setStage('script');
+      const id = crypto.randomUUID();
+      setScript(result);
+      setScriptId(id);
+      setStage('script');
+      await persistScript(id, brief, approvedBrief, result);
+      setSavedScripts(prev => [{ id, brief, dataBrief: approvedBrief, script: result, createdAt: new Date().toISOString() }, ...prev]);
     } catch (e) { setError(e.message); setStage('data-brief'); }
+  };
+
+  const handleLoadScript = (saved) => {
+    setBrief(saved.brief);
+    setDataBrief(saved.dataBrief);
+    setScript(saved.script);
+    setScriptId(saved.id);
+    setStage('script');
+  };
+
+  const handleDeleteScript = async (id) => {
+    await removeScript(id).catch(() => {});
+    setSavedScripts(prev => prev.filter(s => s.id !== id));
+    if (scriptId === id) setStage('list');
   };
 
   return (
@@ -431,22 +498,38 @@ export default function ScriptWriter({ episodes, initialBrief = null }) {
         </div>
       )}
 
-      {error && stage === 'brief' && (
+      {error && stage === 'list' && (
         <div className="max-w-xl mx-auto pt-8 px-4 w-full"><InlineError message={error} /></div>
       )}
 
-      {stage === 'brief' && <BriefInput onSubmit={handleBriefSubmit} />}
+      {stage === 'list' && (
+        <BriefInput
+          onSubmit={handleBriefSubmit}
+          scripts={savedScripts}
+          onLoad={handleLoadScript}
+          onDelete={handleDeleteScript}
+        />
+      )}
 
       {stage === 'data-brief' && dataBrief && (
         <div className="flex-1 overflow-auto">
           {error && <div className="max-w-2xl mx-auto pt-6 px-4"><InlineError message={error} /></div>}
-          <DataBriefPanel brief={brief} dataBrief={dataBrief} onProceed={handleProceed} onBack={() => setStage('brief')} />
+          <DataBriefPanel brief={brief} dataBrief={dataBrief} onProceed={handleProceed} onBack={() => setStage('list')} />
         </div>
       )}
 
       {stage === 'script' && script && (
         <div className="flex-1 overflow-auto">
-          <ScriptDisplay script={script} brief={brief} dataBrief={dataBrief} hostVoiceSample={hostVoiceSample} onUpdate={setScript} onBack={() => setStage('data-brief')} />
+          <ScriptDisplay
+            script={script}
+            brief={brief}
+            dataBrief={dataBrief}
+            hostVoiceSample={hostVoiceSample}
+            onUpdate={setScript}
+            onBack={() => setStage('data-brief')}
+            onDelete={handleDeleteScript}
+            scriptId={scriptId}
+          />
         </div>
       )}
     </div>

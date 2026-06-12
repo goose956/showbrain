@@ -311,6 +311,57 @@ export async function deletePost(userId, postId) {
   await query('DELETE FROM posts WHERE id = $1 AND user_id = $2', [postId, userId]);
 }
 
+// ── ideas ─────────────────────────────────────────────────────────────────────
+
+export async function getIdeas(userId) {
+  const { rows } = await query('SELECT * FROM ideas WHERE user_id = $1', [userId]);
+  return rows[0] ? { ideas: rows[0].ideas, generatedAt: rows[0].generated_at } : null;
+}
+
+export async function saveIdeas(userId, ideas) {
+  await query(
+    `INSERT INTO ideas (user_id, ideas, generated_at) VALUES ($1, $2, NOW())
+     ON CONFLICT (user_id) DO UPDATE SET ideas = EXCLUDED.ideas, generated_at = NOW()`,
+    [userId, JSON.stringify(ideas)]
+  );
+}
+
+export async function deleteIdeas(userId) {
+  await query('DELETE FROM ideas WHERE user_id = $1', [userId]);
+}
+
+// ── scripts ───────────────────────────────────────────────────────────────────
+
+export async function getScripts(userId) {
+  const { rows } = await query(
+    'SELECT * FROM scripts WHERE user_id = $1 ORDER BY created_at DESC',
+    [userId]
+  );
+  return rows.map(r => ({
+    id: r.id,
+    brief: r.brief,
+    dataBrief: r.data_brief,
+    script: r.script,
+    createdAt: r.created_at,
+  }));
+}
+
+export async function saveScript(userId, { id, brief, dataBrief, script }) {
+  await query(
+    `INSERT INTO scripts (id, user_id, brief, data_brief, script, created_at)
+     VALUES ($1, $2, $3, $4, $5, NOW())
+     ON CONFLICT (id, user_id) DO UPDATE SET
+       brief = EXCLUDED.brief,
+       data_brief = EXCLUDED.data_brief,
+       script = EXCLUDED.script`,
+    [id, userId, brief, JSON.stringify(dataBrief), JSON.stringify(script)]
+  );
+}
+
+export async function deleteScript(userId, scriptId) {
+  await query('DELETE FROM scripts WHERE id = $1 AND user_id = $2', [scriptId, userId]);
+}
+
 // ── waitlist ──────────────────────────────────────────────────────────────────
 
 export async function addWaitlistEmail(email) {

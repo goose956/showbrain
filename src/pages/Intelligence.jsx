@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Loader2, Sparkles, ChevronUp, ChevronDown, ChevronsUpDown, AlertCircle, CheckCircle2, XCircle, TrendingUp, Zap } from 'lucide-react';
-import { analyzeEpisodeDimensions, generateChannelInsights } from '../lib/claude';
+import { analyzeEpisodeDimensions, generateChannelInsights, fetchSavedInsights, persistInsights } from '../lib/claude';
 
 // ─── label maps ────────────────────────────────────────────────────────────────
 
@@ -138,6 +138,10 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
   const [page, setPage] = useState(1);
   const [selectedChannel, setSelectedChannel] = useState('all');
 
+  useEffect(() => {
+    fetchSavedInsights('channelInsights').then(saved => { if (saved) setInsights(saved); }).catch(() => {});
+  }, []);
+
   // Derive unique channels from episodes
   const channels = Array.from(
     new Map(episodes.map(e => [e.channelId, { id: e.channelId, name: e.channelName || e.channelId }])).values()
@@ -161,6 +165,7 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
     try {
       const result = await generateChannelInsights(episodesWithDims);
       setInsights(result);
+      persistInsights('channelInsights', result).catch(() => {});
     } catch (err) {
       alert(err.message);
     } finally {

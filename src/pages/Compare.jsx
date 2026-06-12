@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   GitCompare, Sparkles, Loader2, AlertCircle, ChevronUp, ChevronDown,
   ChevronsUpDown, TrendingUp, Zap, Target, Plus, X,
 } from 'lucide-react';
-import { generateCrossChannelInsights } from '../lib/claude';
+import { generateCrossChannelInsights, fetchSavedInsights, persistInsights } from '../lib/claude';
 import { apiFetch } from '../lib/api';
 
 // ── constants ─────────────────────────────────────────────────────────────────
@@ -328,6 +328,10 @@ export default function Compare({ episodes, onChannelsLoaded }) {
   const [insightError, setInsightError] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
 
+  useEffect(() => {
+    fetchSavedInsights('compareInsights').then(saved => { if (saved) setInsights(saved); }).catch(() => {});
+  }, []);
+
   const channelStats = useMemo(() => buildChannelStats(episodes), [episodes]);
 
   const handleChannelAdded = (channel) => {
@@ -376,6 +380,7 @@ export default function Compare({ episodes, onChannelsLoaded }) {
       }));
       const result = await generateCrossChannelInsights(payload);
       setInsights(result);
+      persistInsights('compareInsights', result).catch(() => {});
     } catch (e) {
       setInsightError(e.message);
     } finally {
