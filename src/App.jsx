@@ -17,6 +17,7 @@ import Waitlist from './pages/Waitlist';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Settings from './pages/Settings';
 import { getStoredUser, storeAuth, clearAuth, verifyStoredToken, apiFetch } from './lib/api';
 
 const EMPTY_SYNC = {
@@ -30,7 +31,6 @@ export default function App() {
   const [page, setPage] = useState('overview');
   const [channels, setChannels] = useState([]);
   const [episodes, setEpisodes] = useState([]);
-  const [posts, setPosts] = useState([]);
   const [scriptBrief, setScriptBrief] = useState(null);
   const [authScreen, setAuthScreen] = useState('home');
   const [currentUser, setCurrentUser] = useState(null);
@@ -110,7 +110,6 @@ export default function App() {
     stopPolling();
     setCurrentUser(null);
     setEpisodes([]);
-    setPosts([]);
     setSyncStatus(EMPTY_SYNC);
     setPage('channel');
     setAuthScreen('login');
@@ -179,7 +178,8 @@ export default function App() {
       case 'compare':      return <Compare episodes={episodes} />;
       case 'ideas':        return <Ideas episodes={episodes} onWriteScript={handleWriteScript} />;
       case 'scriptwriter': return <ScriptWriter key={scriptBrief} episodes={episodes} initialBrief={scriptBrief} />;
-      case 'queue':        return <PostQueue posts={posts} onPostsUpdate={setPosts} episodes={episodes} />;
+      case 'queue':        return <PostQueue episodes={episodes} />;
+      case 'settings':     return <Settings />;
       case 'analytics':    return <Analytics />;
       case 'waitlist':     return <Waitlist />;
       case 'publish':      return <Publish episodes={episodes} />;

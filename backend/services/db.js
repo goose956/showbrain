@@ -67,6 +67,26 @@ export async function initSchema() {
     CREATE INDEX IF NOT EXISTS episodes_user_channel ON episodes (user_id, channel_id);
     CREATE INDEX IF NOT EXISTS episodes_video_id     ON episodes (user_id, video_id);
 
+    CREATE TABLE IF NOT EXISTS user_settings (
+      user_id    TEXT PRIMARY KEY REFERENCES members(id) ON DELETE CASCADE,
+      settings   JSONB NOT NULL DEFAULT '{}'
+    );
+
+    CREATE TABLE IF NOT EXISTS posts (
+      id           TEXT NOT NULL,
+      user_id      TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      episode_id   TEXT,
+      episode_title TEXT,
+      platform     TEXT NOT NULL,
+      content      TEXT NOT NULL,
+      status       TEXT NOT NULL DEFAULT 'draft',
+      auto_generated BOOLEAN DEFAULT FALSE,
+      created_at   TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS posts_user_episode ON posts (user_id, episode_id);
+
     CREATE TABLE IF NOT EXISTS clicks (
       id            TEXT PRIMARY KEY,
       user_id       TEXT NOT NULL,

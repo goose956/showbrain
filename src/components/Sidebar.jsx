@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, Search, BarChart2, Lightbulb,
   Inbox, TvMinimalPlay, Plug, PenLine, FlaskConical,
-  GitCompare, LineChart, ChevronDown, Zap, Gauge,
+  GitCompare, LineChart, ChevronDown, Zap, Gauge, Settings,
 } from 'lucide-react';
 
 /* ── Per-item icon colours (fixed across all themes) ─────────────── */
@@ -45,6 +45,7 @@ const nav = [
       { id: 'queue',     label: 'Post Queue',  icon: Inbox,     iconBg: 'bg-purple-500', iconColor: 'text-white' },
       { id: 'analytics', label: 'Analytics',   icon: LineChart, iconBg: 'bg-sky-500',    iconColor: 'text-white' },
       { id: 'publish',   label: 'Connections', icon: Plug,      iconBg: 'bg-teal-500',   iconColor: 'text-white' },
+      { id: 'settings',  label: 'Settings',    icon: Settings,  iconBg: 'bg-slate-500',  iconColor: 'text-white' },
     ],
   },
 ];
