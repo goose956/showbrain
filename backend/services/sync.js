@@ -49,28 +49,12 @@ async function processVideo(userId, video, channelId, channelName) {
   try {
     let transcript;
 
-    // 1. Try YouTube captions (fast, no download, no bot detection)
-    try {
-      console.log(`[sync:${userId}] Fetching captions for: ${video.videoId}`);
-      const raw = await fetchCaptions(video.videoId);
-      console.log(`[sync:${userId}] Cleaning up captions with Claude`);
-      transcript = await cleanupCaptions(raw, video.title);
-      console.log(`[sync:${userId}] Captions ready (${transcript.length} chars)`);
-    } catch (captionErr) {
-      console.warn(`[sync:${userId}] Captions failed (${captionErr.message}), trying Deepgram URL mode`);
-
-      // 2. Try yt-dlp --get-url → Deepgram URL mode
-      try {
-        const audioUrl = await getAudioUrl(video.youtubeUrl);
-        transcript = await transcribeUrl(audioUrl);
-      } catch (urlErr) {
-        console.warn(`[sync:${userId}] URL mode failed (${urlErr.message}), falling back to download`);
-
-        // 3. Last resort: download audio and transcribe
-        audioPath = await downloadAudio(video.youtubeUrl, video.videoId);
-        transcript = await transcribeFile(audioPath);
-      }
-    }
+    // Fetch YouTube captions and clean up with Claude
+    console.log(`[sync:${userId}] Fetching captions for: ${video.videoId}`);
+    const raw = await fetchCaptions(video.videoId);
+    console.log(`[sync:${userId}] Cleaning up captions with Claude`);
+    transcript = await cleanupCaptions(raw, video.title);
+    console.log(`[sync:${userId}] Captions ready (${transcript.length} chars)`);
 
     const [analysis, dimensions] = await Promise.all([
       analyseEpisode(transcript, video.title),
