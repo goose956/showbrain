@@ -9,22 +9,39 @@ if (!existsSync(TMP_DIR)) mkdirSync(TMP_DIR, { recursive: true });
 
 // Resolve yt-dlp binary — handles Nix store paths on Railway
 function resolveYtDlp() {
+  // Log environment to help diagnose path issues
+  try {
+    const path = execSync('echo $PATH', { encoding: 'utf8' }).trim();
+    console.log('[ytdlp] PATH:', path);
+  } catch {}
+  try {
+    const found = execSync('find /nix -name "yt-dlp" -type f 2>/dev/null | head -5', { encoding: 'utf8' }).trim();
+    console.log('[ytdlp] find /nix result:', found || '(none)');
+  } catch {}
+  try {
+    const found = execSync('which yt-dlp 2>/dev/null || true', { encoding: 'utf8' }).trim();
+    console.log('[ytdlp] which result:', found || '(not on PATH)');
+  } catch {}
+
   const candidates = [
     'yt-dlp',
     '/root/.nix-profile/bin/yt-dlp',
     '/nix/var/nix/profiles/default/bin/yt-dlp',
+    '/nix/var/nix/profiles/system/sw/bin/yt-dlp',
     '/usr/local/bin/yt-dlp',
     '/usr/bin/yt-dlp',
   ];
   for (const bin of candidates) {
     try {
       execSync(`${bin} --version`, { stdio: 'ignore' });
+      console.log('[ytdlp] resolved:', bin);
       return { cmd: bin, args: [] };
     } catch {}
   }
   // Last resort: python module
   try {
     execSync('python3 -m yt_dlp --version', { stdio: 'ignore' });
+    console.log('[ytdlp] resolved: python3 -m yt_dlp');
     return { cmd: 'python3', args: ['-m', 'yt_dlp'] };
   } catch {}
   throw new Error('yt-dlp not found — checked PATH, Nix profile, and python3 -m yt_dlp');
