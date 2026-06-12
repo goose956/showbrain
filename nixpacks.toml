@@ -2,10 +2,7 @@
 nixPkgs = ["yt-dlp", "ffmpeg"]
 
 [phases.install]
-cmds = [
-  "npm install",
-  "npm install --prefix backend"
-]
+cmds = ["npm install"]
 
 [phases.build]
 cmds = ["npm run build"]
