@@ -174,7 +174,7 @@ export default function App() {
     switch (page) {
       case 'overview':     return <Overview episodes={episodes} channels={channels} onNavigate={handlePageChange} />;
       case 'channel':      return <Channel onEpisodesLoaded={setEpisodes} onChannelsLoaded={setChannels} syncStatus={syncStatus} onSyncStart={handleSyncStart} />;
-      case 'dashboard':    return <Dashboard episodes={episodes} channels={channels} />;
+      case 'dashboard':    return <Dashboard episodes={episodes} channels={channels} syncStatus={syncStatus} onSyncStart={handleSyncStart} onEpisodesUpdate={setEpisodes} />;
       case 'search':       return <SemanticSearch episodes={episodes} />;
       case 'performance':  return <Performance episodes={episodes} />;
       case 'intelligence': return <Intelligence episodes={episodes} onEpisodesUpdate={setEpisodes} />;
@@ -191,7 +191,7 @@ export default function App() {
       case 'waitlist':     return <Waitlist />;
       case 'publish':      return <Publish episodes={episodes} />;
       case 'admin':        return <Admin currentUser={currentUser.username} onNavigate={handlePageChange} />;
-      default:             return <Dashboard episodes={episodes} channels={channels} />;
+      default:             return <Dashboard episodes={episodes} channels={channels} syncStatus={syncStatus} onSyncStart={handleSyncStart} onEpisodesUpdate={setEpisodes} />;
     }
   };
 

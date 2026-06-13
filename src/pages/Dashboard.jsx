@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
-import { Loader2, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink, Users, Eye, TrendingUp, BarChart2, Clock } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { Loader2, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink, Users, Eye, TrendingUp, BarChart2, Clock, Mic } from 'lucide-react';
 import { generateShowNotes, generateChapterMarkers } from '../lib/claude';
+import { apiFetch } from '../lib/api';
 import { ErrorToast } from '../components/Dialog';
 
 const PAGE_SIZE = 10;
@@ -38,8 +39,9 @@ function StatCard({ icon: Icon, label, value, sub, accent }) {
   );
 }
 
-export default function Dashboard({ episodes, channels = [] }) {
+export default function Dashboard({ episodes, channels = [], syncStatus, onSyncStart, onEpisodesUpdate }) {
   const [selected, setSelected] = useState(null);
+  const [transcribing, setTranscribing] = useState(null); // videoId being transcribed
   const [showNotes, setShowNotes] = useState('');
   const [chapters, setChapters] = useState([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
@@ -122,6 +124,34 @@ export default function Dashboard({ episodes, channels = [] }) {
       setLoadingChapters(false);
     }
   };
+
+  const handleTranscribe = async (ep, e) => {
+    e.stopPropagation();
+    if (!primaryChannel || transcribing) return;
+    setTranscribing(ep.videoId);
+    try {
+      const res = await apiFetch(`/api/channels/${primaryChannel.id}/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoIds: [ep.videoId], batchSize: 1 }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      onSyncStart?.(primaryChannel.id);
+    } catch (err) {
+      setErrorMsg(err.message);
+      setTranscribing(null);
+    }
+  };
+
+  // Clear transcribing spinner and reload episodes when sync finishes
+  const prevRunning = useRef(false);
+  useEffect(() => {
+    if (prevRunning.current && !syncStatus?.running && transcribing) {
+      setTranscribing(null);
+      apiFetch('/api/episodes').then(r => r.json()).then(eps => onEpisodesUpdate?.(eps)).catch(() => {});
+    }
+    prevRunning.current = syncStatus?.running ?? false;
+  }, [syncStatus?.running]);
 
   if (!primaryChannel) {
     return (
@@ -225,7 +255,15 @@ export default function Dashboard({ episodes, channels = [] }) {
                     )}
                     {ep.transcript
                       ? <span className="flex items-center gap-0.5 text-emerald-400 text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded-full shrink-0">✓ Done</span>
-                      : <span className="text-th-tx4 text-[10px] bg-th-raised px-1.5 py-0.5 rounded-full shrink-0">Pending</span>
+                      : transcribing === ep.videoId
+                        ? <span className="flex items-center gap-0.5 text-th-accent text-[10px] bg-th-accent/10 px-1.5 py-0.5 rounded-full shrink-0"><Loader2 size={8} className="animate-spin" /> Syncing…</span>
+                        : <button
+                            onClick={(e) => handleTranscribe(ep, e)}
+                            disabled={!!transcribing}
+                            className="flex items-center gap-0.5 text-[10px] text-th-tx3 hover:text-th-accent bg-th-raised hover:bg-th-accent/10 border border-th-border hover:border-th-accent/30 px-1.5 py-0.5 rounded-full shrink-0 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <Mic size={8} /> Transcribe
+                          </button>
                     }
                   </div>
                 </div>
