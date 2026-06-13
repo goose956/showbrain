@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Zap, RefreshCw, Loader2, Plus, X, ExternalLink, PenLine,
-  Rss, Youtube, Users, AlertCircle, Clock, TrendingUp, Settings,
+  Rss, PlayCircle, Users, AlertCircle, Clock, TrendingUp, Settings,
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 
@@ -389,7 +389,7 @@ export default function Trending({ channels = [], onWriteScript }) {
             {/* YouTube trending */}
             {data.youtubeVideos?.length > 0 && (
               <div>
-                <SectionHeader icon={Youtube} iconClass="text-red-400" title="Trending in your niche" count={data.youtubeVideos.length} />
+                <SectionHeader icon={PlayCircle} iconClass="text-red-400" title="Trending in your niche" count={data.youtubeVideos.length} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {data.youtubeVideos.map(v => (
                     <VideoCard key={v.videoId} video={v} source="YouTube" onMakeVideo={handleMakeVideo} />
