@@ -43,6 +43,9 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
 
+  // Read invite code from URL — ?invite=CODE
+  const inviteCode = new URLSearchParams(window.location.search).get('invite') || null;
+
   // ── Global sync state (persists across page changes) ─────────────────────
   const [syncStatus, setSyncStatus] = useState(EMPTY_SYNC);
   const pollRef = useRef(null);
@@ -191,8 +194,8 @@ export default function App() {
     if (authScreen === 'login') {
       return <Login onAuth={handleAuth} onGoBack={() => setAuthScreen('home')} />;
     }
-    if (authScreen === 'register') {
-      return <Register onAuth={handleAuth} onGoLogin={() => setAuthScreen('login')} />;
+    if (authScreen === 'register' || inviteCode) {
+      return <Register onAuth={handleAuth} onGoLogin={() => setAuthScreen('login')} inviteCode={inviteCode} />;
     }
     // Default: show the public landing page with a login button
     return <Waitlist onGoLogin={() => setAuthScreen('login')} />;

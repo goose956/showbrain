@@ -49,7 +49,9 @@ function requireAdmin(req, res, next) {
 // ── auth routes (public) ──────────────────────────────────────────────────────
 
 app.post('/api/auth/register', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, inviteCode } = req.body;
+  const INVITE_CODE = process.env.INVITE_CODE;
+  if (INVITE_CODE && inviteCode !== INVITE_CODE) return res.status(403).json({ error: 'Invalid invite code' });
   if (!username?.trim() || !password) return res.status(400).json({ error: 'Username and password are required' });
   if (username.trim().length < 2) return res.status(400).json({ error: 'Username must be at least 2 characters' });
   if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });

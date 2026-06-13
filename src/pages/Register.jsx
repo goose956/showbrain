@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import Logo from '../components/Logo';
 
-export default function Register({ onAuth, onGoLogin }) {
+export default function Register({ onAuth, onGoLogin, inviteCode }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -17,7 +17,7 @@ export default function Register({ onAuth, onGoLogin }) {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password }),
+        body: JSON.stringify({ username: username.trim(), password, inviteCode }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
