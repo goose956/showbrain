@@ -199,29 +199,31 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-th-bg overflow-hidden">
-      <Sidebar
-        active={page}
-        onChange={handlePageChange}
-        isAdmin={currentUser.isAdmin}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Topbar
-          currentUser={currentUser.username}
+    <>
+      <div className="flex h-screen bg-th-bg overflow-hidden">
+        <Sidebar
+          active={page}
+          onChange={handlePageChange}
           isAdmin={currentUser.isAdmin}
-          onLogout={handleLogout}
-          onNavigate={handlePageChange}
-          syncStatus={syncStatus}
-          activePage={page}
-          onMenuClick={() => setSidebarOpen(true)}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
-        <main className="flex-1 min-h-0 overflow-y-auto">
-          {renderPage()}
-        </main>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Topbar
+            currentUser={currentUser.username}
+            isAdmin={currentUser.isAdmin}
+            onLogout={handleLogout}
+            onNavigate={handlePageChange}
+            syncStatus={syncStatus}
+            activePage={page}
+            onMenuClick={() => setSidebarOpen(true)}
+          />
+          <main className="flex-1 min-h-0 overflow-y-auto">
+            {renderPage()}
+          </main>
+        </div>
       </div>
-    </div>
-    {!currentUser.isAdmin && <SupportButton currentUser={currentUser.username} />}
+      {!currentUser.isAdmin && <SupportButton currentUser={currentUser.username} />}
+    </>
   );
 }
