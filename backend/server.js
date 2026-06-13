@@ -160,7 +160,7 @@ async function populateChannelVideos(userId, channelId, channelName, compareOnly
       const stats = statsMap[v.videoId] || {};
       const dims = titleDimensions[i] || null;
       await upsertEpisode(userId, {
-        id: `${userId}-${v.videoId}`,
+        id: `yt-${v.videoId}`,
         channelId,
         channelName,
         videoId: v.videoId,

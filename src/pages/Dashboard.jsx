@@ -217,11 +217,17 @@ export default function Dashboard({ episodes, channels = [] }) {
                 }`}
               >
                 <p className="text-th-tx1 text-xs font-medium leading-snug line-clamp-2 mb-1.5">{ep.title}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-th-tx4 text-[11px]">{ep.publishedAt}</span>
-                  {ep.viewCount > 0 && (
-                    <span className="text-th-tx3 text-[11px] tabular-nums">{fmt(ep.viewCount)} views</span>
-                  )}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-th-tx4 text-[11px] shrink-0">{ep.publishedAt}</span>
+                  <div className="flex items-center gap-2">
+                    {ep.viewCount > 0 && (
+                      <span className="text-th-tx3 text-[11px] tabular-nums">{fmt(ep.viewCount)} views</span>
+                    )}
+                    {ep.transcript
+                      ? <span className="flex items-center gap-0.5 text-emerald-400 text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded-full shrink-0">✓ Done</span>
+                      : <span className="text-th-tx4 text-[10px] bg-th-raised px-1.5 py-0.5 rounded-full shrink-0">Pending</span>
+                    }
+                  </div>
                 </div>
               </div>
             ))}
