@@ -52,6 +52,13 @@ const FEATURES = [
     title: 'Script Writer',
     desc: 'Go from idea to full script in minutes. AI pulls insights from your top-performing episodes to inform the hook, structure, and talking points.',
   },
+  {
+    icon: TrendingUp,
+    color: 'text-yellow-400',
+    bg: 'bg-yellow-500/10 border-yellow-500/20',
+    title: 'Trending Radar',
+    desc: 'See what\'s blowing up in your niche right now — competitor new releases, fast-rising YouTube videos, and industry news — all in one feed. Hit publish before the wave peaks.',
+  },
 ];
 
 const STEPS = [
@@ -64,7 +71,7 @@ const PAINS = [
   { icon: Clock, text: 'Hours writing show notes and social posts for every episode' },
   { icon: Target, text: 'No idea which episode formats actually grow your audience' },
   { icon: Users, text: 'Guessing what your competitors are doing right' },
-  { icon: TrendingUp, text: 'New episodes get zero traction because repurposing takes too long' },
+  { icon: TrendingUp, text: 'Missing trending topics because you only find out about them days too late' },
 ];
 
 const PLATFORMS = [
