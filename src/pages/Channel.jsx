@@ -4,7 +4,7 @@ import { ConfirmDialog } from '../components/Dialog';
 import {
   TvMinimalPlay, RefreshCw, Loader2, CheckCircle, AlertCircle,
   Trash2, Radio, ChevronDown, CheckSquare, Square, Play, Plus, X,
-  BarChart2, Sparkles, Eye, EyeOff, Star,
+  BarChart2, Sparkles, Eye, EyeOff, Star, GitCompare, ArrowRight,
 } from 'lucide-react';
 
 // ── Sync progress ─────────────────────────────────────────────────────────────
@@ -686,25 +686,62 @@ export default function Channel({ onEpisodesLoaded, onChannelsLoaded, syncStatus
 
       {/* Channel list */}
       {channels.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <TvMinimalPlay size={32} className="text-th-raised mb-3" />
-          <p className="text-th-tx3 text-sm mb-1">No channels added yet</p>
-          <p className="text-th-tx4 text-xs">Add your own channel, or add competitors to compare.</p>
+        /* ── No channels at all ── */
+        <div className="rounded-2xl border-2 border-dashed border-th-border p-10 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto mb-4">
+            <TvMinimalPlay size={26} className="text-blue-400" />
+          </div>
+          <h2 className="text-th-tx1 text-base font-semibold mb-1">Add your main channel first</h2>
+          <p className="text-th-tx3 text-sm max-w-sm mx-auto leading-relaxed mb-6">
+            Paste your YouTube channel URL or @handle above. ShowBrain will sync your episodes, transcribe them, and unlock Search, Intelligence, Performance, Ideas, and Scripts.
+          </p>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-th-accent hover:bg-th-accentH text-th-accentFg text-sm font-medium transition-colors"
+          >
+            <Plus size={14} /> Add my channel
+          </button>
         </div>
       ) : (
-        <div className="space-y-4">
-          {[...channels].sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)).map(channel => (
-            <ChannelCard
-              key={channel.id}
-              channel={channel}
-              syncStatus={syncStatus}
-              onSync={handleSync}
-              onFetchStats={handleFetchStats}
-              onRemove={handleRemove}
-              onSetPrimary={handleSetPrimary}
-            />
-          ))}
-        </div>
+        <>
+          <div className="space-y-4">
+            {[...channels].sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)).map(channel => (
+              <ChannelCard
+                key={channel.id}
+                channel={channel}
+                syncStatus={syncStatus}
+                onSync={handleSync}
+                onFetchStats={handleFetchStats}
+                onRemove={handleRemove}
+                onSetPrimary={handleSetPrimary}
+              />
+            ))}
+          </div>
+
+          {/* ── Competitor prompt — shown once a primary channel exists ── */}
+          {channels.some(c => c.isPrimary || !c.compareOnly) && (
+            <div className="mt-6 rounded-xl border border-cyan-500/25 bg-cyan-500/5 p-5">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center shrink-0">
+                  <GitCompare size={16} className="text-cyan-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-th-tx1 text-sm font-semibold mb-0.5">Now add your competitors</p>
+                  <p className="text-th-tx3 text-xs leading-relaxed">
+                    Add channels in your niche as compare-only. No transcription cost — ShowBrain just pulls their stats and top videos. Unlocks the Compare tab so you can benchmark your channel against the competition and spot content gaps.
+                  </p>
+                  <p className="text-th-tx4 text-xs mt-2">You can add as many as you like.</p>
+                </div>
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-400 text-xs font-medium transition-colors"
+                >
+                  Add competitor <ArrowRight size={11} />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Auto-sync note */}
