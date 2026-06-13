@@ -326,44 +326,43 @@ const SCORE_FACTORS = [
 ];
 
 function buildGrowthScores(channelStats) {
-  // Raw values per channel per factor
   const raw = channelStats.map(ch => ({
     channelId: ch.channelId,
     momentum:    ch.growthPct !== null ? Math.max(0, ch.growthPct + 100) : null,
     avgViews:    ch.avgViews || null,
-    engagement:  ch.engagementRate,
-    consistency: ch.ppm,
+    engagement:  ch.engagementRate || null,
+    consistency: ch.ppm || null,
   }));
 
-  // Normalise each factor 0–1 across all channels (min-max)
-  const normalised = SCORE_FACTORS.map(({ key }) => {
-    const vals = raw.map(r => r[key]).filter(v => v !== null && v !== undefined && isFinite(v));
-    if (!vals.length) return { key, min: 0, max: 1 };
-    const min = Math.min(...vals);
-    const max = Math.max(...vals);
-    return { key, min, max: max === min ? max + 1 : max };
-  });
+  // Ratio normalise: score = value / max across channels × 100
+  // This means the best channel scores 100 on a factor, others score proportionally
+  // (avoids the min-max problem where the loser always gets 0)
+  const maxByFactor = {};
+  for (const { key } of SCORE_FACTORS) {
+    const vals = raw.map(r => r[key]).filter(v => v !== null && isFinite(v) && v > 0);
+    maxByFactor[key] = vals.length ? Math.max(...vals) : null;
+  }
 
   return channelStats.map((ch, i) => {
     const r = raw[i];
-    let totalScore = 0;
     const breakdown = {};
+    let totalScore = 0;
+    let totalWeight = 0;
 
     for (const { key, weight } of SCORE_FACTORS) {
-      const { min, max } = normalised.find(n => n.key === key);
       const v = r[key];
-      const norm = (v !== null && v !== undefined && isFinite(v))
-        ? (v - min) / (max - min)
-        : 0;
-      breakdown[key] = Math.round(norm * 100);
-      totalScore += norm * weight;
+      const maxV = maxByFactor[key];
+      const hasData = v !== null && isFinite(v) && maxV !== null;
+      const norm = hasData ? Math.min(v / maxV, 1) : null;
+      breakdown[key] = norm !== null ? Math.round(norm * 100) : null;
+      if (norm !== null) {
+        totalScore += norm * weight;
+        totalWeight += weight;
+      }
     }
 
-    return {
-      ...ch,
-      score: Math.round(totalScore * 100),
-      breakdown,
-    };
+    const score = totalWeight > 0 ? Math.round((totalScore / totalWeight) * 100) : 0;
+    return { ...ch, score, breakdown };
   }).sort((a, b) => b.score - a.score);
 }
 
