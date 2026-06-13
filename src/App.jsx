@@ -220,8 +220,8 @@ export default function App() {
         <main className="flex-1 min-h-0 overflow-y-auto">
           {renderPage()}
         </main>
-        {!currentUser.isAdmin && <SupportButton currentUser={currentUser.username} />}
       </div>
     </div>
+    {!currentUser.isAdmin && <SupportButton currentUser={currentUser.username} />}
   );
 }
