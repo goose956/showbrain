@@ -1,4 +1,6 @@
-import { TrendingUp, Headphones, Share2, Clock, BarChart2, Award } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { TrendingUp, Headphones, Share2, Clock, BarChart2, Award, RefreshCw } from 'lucide-react';
+import { apiFetch } from '../lib/api';
 
 function StatCard({ label, value, sub, icon: Icon, color = 'accent' }) {
   const colors = {
@@ -46,9 +48,37 @@ function formatDuration(seconds) {
   return `${m}m`;
 }
 
-export default function Performance({ episodes, channels = [] }) {
+export default function Performance({ episodes, channels = [], onEpisodesUpdate }) {
   const primaryChannel = channels.find(c => c.isPrimary) || channels.find(c => !c.compareOnly) || channels[0];
   const eps = primaryChannel ? episodes.filter(ep => ep.channelId === primaryChannel.id) : episodes;
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const pollRef = useRef(null);
+
+  const stopPoll = () => { clearInterval(pollRef.current); pollRef.current = null; };
+
+  const handleRefresh = async () => {
+    if (!primaryChannel || refreshing) return;
+    setRefreshing(true);
+    try {
+      await apiFetch(`/api/channels/${primaryChannel.id}/fetch-stats`, { method: 'POST' });
+      pollRef.current = setInterval(async () => {
+        const status = await apiFetch('/api/sync/status').then(r => r.json());
+        if (!status.running) {
+          stopPoll();
+          setRefreshing(false);
+          setLastUpdated(new Date());
+          const eps = await apiFetch('/api/episodes').then(r => r.json());
+          onEpisodesUpdate?.(eps);
+        }
+      }, 2000);
+    } catch {
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => () => stopPoll(), []);
 
   if (eps.length === 0) {
     return (
@@ -98,6 +128,17 @@ export default function Performance({ episodes, channels = [] }) {
               )}
               {primaryChannel.name}
             </span>
+          )}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing || !primaryChannel}
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-th-surface border border-th-border text-th-tx3 hover:text-th-tx1 text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+            {refreshing ? 'Updating…' : 'Refresh stats'}
+          </button>
+          {lastUpdated && !refreshing && (
+            <span className="text-th-tx4 text-xs">Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           )}
         </div>
 

@@ -83,11 +83,31 @@ export default function App() {
           return Promise.all([apiFetch('/api/episodes'), apiFetch('/api/channels')])
             .then(([epRes, chRes]) => Promise.all([epRes.json(), chRes.json()]))
             .then(([eps, chs]) => {
-              setEpisodes(eps);
-              setChannels(chs.map(ch => ({
+              const mapped = chs.map(ch => ({
                 ...ch,
                 transcribedCount: eps.filter(e => e.channelId === ch.id && e.transcript).length,
-              })));
+              }));
+              setEpisodes(eps);
+              setChannels(mapped);
+
+              // Auto-sync primary channel if last sync was > 24 hours ago
+              const primary = mapped.find(c => c.isPrimary) || mapped.find(c => !c.compareOnly) || mapped[0];
+              if (primary && !user.isAdmin) {
+                const lastSync = primary.lastSyncedAt ? new Date(primary.lastSyncedAt) : null;
+                const stale = !lastSync || (Date.now() - lastSync.getTime()) > 24 * 60 * 60 * 1000;
+                if (stale) {
+                  apiFetch(`/api/channels/${primary.id}/sync`, { method: 'POST', body: JSON.stringify({ batchSize: 5, maxVideos: 50 }) })
+                    .then(() => startPolling(() => {
+                      Promise.all([apiFetch('/api/episodes'), apiFetch('/api/channels')])
+                        .then(([epRes, chRes]) => Promise.all([epRes.json(), chRes.json()]))
+                        .then(([eps, chs]) => {
+                          setEpisodes(eps);
+                          setChannels(chs.map(ch => ({ ...ch, transcribedCount: eps.filter(e => e.channelId === ch.id && e.transcript).length })));
+                        }).catch(() => {});
+                    }))
+                    .catch(() => {});
+                }
+              }
             });
         }
       })
@@ -185,7 +205,7 @@ export default function App() {
       case 'channel':      return <Channel onEpisodesLoaded={setEpisodes} onChannelsLoaded={setChannels} syncStatus={syncStatus} onSyncStart={handleSyncStart} />;
       case 'dashboard':    return <Dashboard episodes={episodes} channels={channels} syncStatus={syncStatus} onSyncStart={handleSyncStart} onEpisodesUpdate={setEpisodes} />;
       case 'search':       return <SemanticSearch episodes={episodes} />;
-      case 'performance':  return <Performance episodes={episodes} channels={channels} />;
+      case 'performance':  return <Performance episodes={episodes} channels={channels} onEpisodesUpdate={setEpisodes} />;
       case 'intelligence': return <Intelligence episodes={episodes} channels={channels} onEpisodesUpdate={setEpisodes} />;
       case 'compare':      return <Compare episodes={episodes} channels={channels} onChannelsLoaded={() => {
         apiFetch('/api/channels').then(r => r.json()).then(chs =>
