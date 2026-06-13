@@ -847,13 +847,14 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
               {sorted.map(ch => {
                 const pal = CHANNEL_PALETTE[ch.paletteIdx];
                 return (
-                  <tr key={ch.channelId} className="border-b border-th-border/60 hover:bg-th-surface/40 transition-colors">
+                  <tr key={ch.channelId} className={`border-b border-th-border/60 transition-colors ${ch.isPrimary ? 'bg-amber-500/5 hover:bg-amber-500/8' : 'hover:bg-th-surface/40'}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
+                        {ch.isPrimary && <span className="w-1 h-5 rounded-full bg-amber-400 shrink-0" />}
                         <span className={`w-2 h-2 rounded-full shrink-0 ${pal.bar}`} />
                         <span className="text-th-tx1 text-xs font-medium truncate max-w-[140px]">{ch.name}</span>
                         {ch.isPrimary && (
-                          <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0">You</span>
+                          <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0">Your channel</span>
                         )}
                       </div>
                     </td>
