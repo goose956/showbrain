@@ -2,9 +2,10 @@ import { useState } from 'react';
 import {
   Search, BarChart2, Lightbulb,
   Inbox, Plug, PenLine, FlaskConical,
-  GitCompare, LineChart, ChevronDown, Zap, X,
+  GitCompare, LineChart, ChevronDown, X,
   Gauge, TvMinimalPlay, LayoutDashboard, TrendingUp,
 } from 'lucide-react';
+import Logo from './Logo';
 
 const TOP_NAV = [
   { id: 'overview',  label: 'Dashboard', icon: Gauge,           iconBg: 'bg-rose-500' },
@@ -75,10 +76,11 @@ function SidebarContent({ active, onChange, onClose }) {
       {/* ── Logo ─────────────────────────────────────────────────── */}
       <div className="px-4 h-16 flex items-center justify-between border-b border-th-sborder shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-th-accent to-th-accentH flex items-center justify-center shadow-lg shrink-0">
-            <Zap size={12} className="text-white" />
+          <Logo size={28} />
+          <div className="flex flex-col leading-none">
+            <span className="text-th-tx1 font-bold text-sm tracking-tight">ShowBrain</span>
+            <span className="text-th-tx4 text-[10px] tracking-wide">showbrain.co</span>
           </div>
-          <span className="text-th-tx1 font-bold text-sm tracking-tight">ShowBrain</span>
         </div>
         {onClose && (
           <button onClick={onClose} className="md:hidden p-1 text-th-tx4 hover:text-th-tx1 transition-colors">

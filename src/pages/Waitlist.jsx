@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import {
-  Zap, Brain, BarChart2, PenLine, GitCompare, Inbox,
+  Brain, BarChart2, PenLine, GitCompare, Inbox,
   Lightbulb, CheckCircle, ArrowRight, Sparkles, Play,
   TrendingUp, Clock, Target, Users,
   Mail, MessageCircle, Repeat2, Share2, AtSign, Send,
 } from 'lucide-react';
+import Logo from '../components/Logo';
 
 // ── data ──────────────────────────────────────────────────────────────────────
 
@@ -165,9 +166,7 @@ export default function Waitlist({ onGoLogin }) {
       {/* ── Nav bar ── */}
       <div className="flex items-center justify-between px-8 py-4 border-b border-th-border/40">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-th-accent flex items-center justify-center">
-            <Zap size={13} className="text-th-accentFg" />
-          </div>
+          <Logo size={24} />
           <span className="text-th-tx1 text-sm font-semibold">ShowBrain</span>
         </div>
         {onGoLogin && (
@@ -188,7 +187,7 @@ export default function Waitlist({ onGoLogin }) {
 
         <div className="relative max-w-4xl mx-auto px-8 pt-20 pb-16 text-center">
           <div className="inline-flex items-center gap-2 bg-th-accent/10 border border-th-accent/25 text-th-accent text-xs font-medium px-3 py-1.5 rounded-full mb-8">
-            <Zap size={11} />
+            <Sparkles size={11} />
             Now in private beta
           </div>
 
@@ -436,12 +435,10 @@ export default function Waitlist({ onGoLogin }) {
       {/* Footer */}
       <div className="border-t border-th-border py-8 text-center">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="w-5 h-5 rounded-md bg-th-accent flex items-center justify-center">
-            <Zap size={11} className="text-th-accentFg" />
-          </div>
+          <Logo size={20} />
           <span className="text-th-tx1 text-sm font-semibold">ShowBrain</span>
         </div>
-        <p className="text-th-tx4 text-xs">Built for podcasters who want to grow with data, not guesswork.</p>
+        <p className="text-th-tx4 text-xs">showbrain.co — Built for podcasters who want to grow with data, not guesswork.</p>
       </div>
     </div>
   );

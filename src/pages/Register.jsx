@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Zap, Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import Logo from '../components/Logo';
 
 export default function Register({ onAuth, onGoLogin }) {
   const [username, setUsername] = useState('');
@@ -30,11 +31,12 @@ export default function Register({ onAuth, onGoLogin }) {
 
   return (
     <div className="min-h-screen bg-th-bg flex flex-col items-center justify-center px-4">
-      <div className="flex items-center gap-2.5 mb-10">
-        <div className="w-8 h-8 rounded-xl bg-th-accent flex items-center justify-center">
-          <Zap size={16} className="text-th-accentFg" />
+      <div className="flex items-center gap-3 mb-10">
+        <Logo size={36} />
+        <div className="flex flex-col leading-none">
+          <span className="text-th-tx1 font-bold text-xl tracking-tight">ShowBrain</span>
+          <span className="text-th-tx4 text-xs">showbrain.co</span>
         </div>
-        <span className="text-th-tx1 font-semibold text-xl tracking-tight">ShowBrain</span>
       </div>
 
       <div className="w-full max-w-xs">
