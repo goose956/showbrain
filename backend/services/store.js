@@ -188,13 +188,13 @@ export async function upsertEpisode(userId, episode) {
 export async function getEpisodeByVideoId(userId, videoId, channelId = null) {
   if (channelId) {
     const { rows } = await query(
-      'SELECT * FROM episodes WHERE user_id = $1 AND video_id = $2 AND channel_id = $3 LIMIT 1',
+      'SELECT * FROM episodes WHERE user_id = $1 AND video_id = $2 AND channel_id = $3 ORDER BY (transcript IS NOT NULL) DESC LIMIT 1',
       [userId, videoId, channelId]
     );
     return rowToEpisode(rows[0]) || null;
   }
   const { rows } = await query(
-    'SELECT * FROM episodes WHERE user_id = $1 AND video_id = $2 LIMIT 1',
+    'SELECT * FROM episodes WHERE user_id = $1 AND video_id = $2 ORDER BY (transcript IS NOT NULL) DESC LIMIT 1',
     [userId, videoId]
   );
   return rowToEpisode(rows[0]) || null;
