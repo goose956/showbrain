@@ -4,7 +4,7 @@ import {
   ChevronsUpDown, TrendingUp, Zap, Target, Plus, X, Trophy, Users,
   BarChart2, ArrowUpRight, BookOpen,
 } from 'lucide-react';
-import { generateCrossChannelInsights, fetchSavedInsights, persistInsights } from '../lib/claude';
+import { generateOutlierAnalysis, fetchSavedInsights, persistInsights } from '../lib/claude';
 import { apiFetch } from '../lib/api';
 
 // ── constants ─────────────────────────────────────────────────────────────────
@@ -184,74 +184,101 @@ function SortIcon({ col, sortCol, dir }) {
   return dir === 'asc' ? <ChevronUp size={11} className="text-th-accent" /> : <ChevronDown size={11} className="text-th-accent" />;
 }
 
-// ── AI insights display ───────────────────────────────────────────────────────
+// ── Outlier insights panel ────────────────────────────────────────────────────
 
-function InsightsPanel({ insights }) {
+function OutlierPanel({ insights }) {
   return (
     <div className="space-y-6">
-      {insights.nichePatterns?.length > 0 && (
+
+      {insights.outlierPatterns?.length > 0 && (
         <div>
           <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
-            <TrendingUp size={14} className="text-th-accent" /> What's working in this niche
+            <TrendingUp size={14} className="text-th-accent" /> Why the top videos outperformed
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {insights.nichePatterns.map((p, i) => (
+            {insights.outlierPatterns.map((p, i) => (
               <div key={i} className="bg-th-surface border border-th-border rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${p.strength === 'strong' ? 'bg-th-accent/10 text-th-accent border-th-accent/25' : 'bg-th-raised text-th-tx2 border-th-border'}`}>
+                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border shrink-0 ${p.strength === 'strong' ? 'bg-th-accent/10 text-th-accent border-th-accent/25' : 'bg-th-raised text-th-tx2 border-th-border'}`}>
                     {p.strength}
                   </span>
-                  <p className="text-th-tx1 text-xs font-medium">{p.title}</p>
+                  <p className="text-th-tx1 text-xs font-medium">{p.pattern}</p>
                 </div>
-                <p className="text-th-tx2 text-xs leading-relaxed">{p.detail}</p>
+                <p className="text-th-tx2 text-xs leading-relaxed mb-2">{p.finding}</p>
+                {p.examples?.length > 0 && (
+                  <div className="flex flex-col gap-1">
+                    {p.examples.map((ex, j) => (
+                      <span key={j} className="text-th-tx4 text-[11px] italic">"{ex}"</span>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {insights.topChannelEdge && (
+      {insights.hookAnalysis && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-5">
-          <h3 className="text-amber-300 text-sm font-semibold mb-2 flex items-center gap-2">
-            <Zap size={13} /> Why {insights.topChannelEdge.channelName} is winning
+          <h3 className="text-amber-300 text-sm font-semibold mb-1 flex items-center gap-2">
+            <Zap size={13} /> Dominant hook: {insights.hookAnalysis.dominantHook}
           </h3>
-          <p className="text-amber-200/80 text-sm leading-relaxed">{insights.topChannelEdge.whatSetsItApart}</p>
+          <p className="text-amber-200/80 text-sm leading-relaxed mb-2">{insights.hookAnalysis.whyItWorks}</p>
+          {insights.hookAnalysis.bestExample && (
+            <p className="text-amber-300/60 text-xs italic">Best example: "{insights.hookAnalysis.bestExample}"</p>
+          )}
         </div>
       )}
 
-      {insights.gaps?.length > 0 && (
+      {insights.topicClusters?.length > 0 && (
         <div>
           <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
-            <Target size={14} className="text-emerald-400" /> Gaps nobody is owning
+            <BarChart2 size={14} className="text-sky-400" /> Topics that punch above average
           </h3>
-          <div className="space-y-3">
-            {insights.gaps.map((g, i) => (
-              <div key={i} className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
-                <p className="text-emerald-300 text-xs font-medium mb-1">{g.gap}</p>
-                <p className="text-emerald-200/70 text-xs leading-relaxed">{g.opportunity}</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {insights.topicClusters.map((t, i) => (
+              <div key={i} className="bg-sky-500/10 border border-sky-500/20 rounded-xl p-4">
+                <p className="text-sky-300 text-xs font-semibold mb-1">{t.topic}</p>
+                <p className="text-sky-200/70 text-xs mb-2">{t.performance}</p>
+                <p className="text-th-tx4 text-[11px]">{t.channels?.join(', ')}</p>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {insights.newChannelPlaybook?.length > 0 && (
+      {insights.titlePatterns?.length > 0 && (
         <div>
           <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
-            <BookOpen size={14} className="text-th-accent" /> What to steal for your channel
+            <Target size={14} className="text-pink-400" /> Title formulas that work
           </h3>
           <div className="bg-th-surface border border-th-border rounded-xl divide-y divide-th-border">
-            {insights.newChannelPlaybook.map((action, i) => (
+            {insights.titlePatterns.map((t, i) => (
               <div key={i} className="flex items-start gap-3 px-4 py-3">
-                <span className="w-5 h-5 rounded-full bg-th-accent/20 border border-violet-500/30 text-th-accent text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
-                  {i + 1}
-                </span>
+                <span className="w-5 h-5 rounded-full bg-pink-500/20 border border-pink-500/30 text-pink-300 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                <p className="text-th-tx2 text-sm leading-relaxed font-mono text-xs">{t}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {insights.steal?.length > 0 && (
+        <div>
+          <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
+            <BookOpen size={14} className="text-emerald-400" /> What to steal
+          </h3>
+          <div className="bg-th-surface border border-th-border rounded-xl divide-y divide-th-border">
+            {insights.steal.map((action, i) => (
+              <div key={i} className="flex items-start gap-3 px-4 py-3">
+                <span className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
                 <p className="text-th-tx2 text-sm leading-relaxed">{action}</p>
               </div>
             ))}
           </div>
         </div>
       )}
+
     </div>
   );
 }
@@ -542,29 +569,7 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
     setGenerating(true);
     setInsightError('');
     try {
-      const payload = channelStats.map(ch => ({
-        name: ch.name,
-        subscriberCount: ch.subscriberCount,
-        channelAgeYears: ch.channelCreatedAt
-          ? parseFloat(((Date.now() - new Date(ch.channelCreatedAt)) / (1000 * 60 * 60 * 24 * 365.25)).toFixed(1))
-          : null,
-        episodeCount: ch.episodeCount,
-        analysedCount: ch.analysedCount,
-        avgViews: Math.round(ch.avgViews),
-        viewsPerSubscriber: ch.viewsPerSub ? parseFloat(ch.viewsPerSub.toFixed(3)) : null,
-        growthPct: ch.growthPct ? parseFloat(ch.growthPct.toFixed(1)) : null,
-        engagementRate: parseFloat((ch.engagementRate * 100).toFixed(2)),
-        postsPerMonth: ch.ppm,
-        topFormat: ch.topFormat,
-        topHook: ch.topHook,
-        topContent: ch.topContent,
-        topTone: ch.topTone,
-        topEpisodes: [...ch.episodes]
-          .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
-          .slice(0, 3)
-          .map(e => ({ title: e.title, views: e.viewCount, hookType: e.dimensions?.hookType, format: e.dimensions?.format })),
-      }));
-      const result = await generateCrossChannelInsights(payload);
+      const result = await generateOutlierAnalysis();
       setInsights(result);
       persistInsights('compareInsights', result).catch(() => {});
     } catch (e) {
@@ -618,12 +623,12 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
           </div>
           <button
             onClick={handleGenerate}
-            disabled={generating || analysedEpisodes < 3}
+            disabled={generating}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-th-accent hover:bg-th-accentH disabled:opacity-40 disabled:cursor-not-allowed text-th-accentFg text-sm transition-colors"
           >
             {generating
-              ? <><Loader2 size={14} className="animate-spin" />Analysing…</>
-              : <><Sparkles size={14} />{insights ? 'Regenerate' : 'What can I steal?'}</>}
+              ? <><Loader2 size={14} className="animate-spin" />Transcribing &amp; analysing…</>
+              : <><Sparkles size={14} />{insights ? 'Re-analyse outliers' : 'Analyse top videos'}</>}
           </button>
         </div>
 
@@ -812,18 +817,11 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
 
         {insights && (
           <div className="px-6 pb-10 border-t border-th-border pt-8">
-            <h2 className="text-th-tx1 font-semibold text-base mb-1">What to steal from this niche</h2>
-            <p className="text-th-tx3 text-xs mb-6">AI analysis of patterns, gaps, and actionable lessons based on {analysedEpisodes} analysed episodes.</p>
-            <InsightsPanel insights={insights} />
-          </div>
-        )}
-
-        {analysedEpisodes < 3 && (
-          <div className="px-6 py-8 border-t border-th-border">
-            <div className="flex items-start gap-3 text-th-tx3 text-sm">
-              <AlertCircle size={15} className="shrink-0 mt-0.5 text-amber-500" />
-              Analyse at least 3 episodes across your channels on the Intelligence tab to unlock AI niche analysis.
-            </div>
+            <h2 className="text-th-tx1 font-semibold text-base mb-1">Why the outliers won</h2>
+            <p className="text-th-tx3 text-xs mb-6">
+              Based on the top 5 videos per channel — transcribed and analysed for patterns in hooks, titles, topics, and format.
+            </p>
+            <OutlierPanel insights={insights} />
           </div>
         )}
       </div>

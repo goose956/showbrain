@@ -55,6 +55,11 @@ export async function generateCrossChannelInsights(channelStats) {
   return post('/api/ai/cross-channel-insights', { channelStats });
 }
 
+// ── Outlier Analysis ──────────────────────────────────────────────────────────
+export async function generateOutlierAnalysis() {
+  return post('/api/ai/outlier-analysis', {});
+}
+
 // ── Episode Ideas ─────────────────────────────────────────────────────────────
 export async function generateEpisodeIdeas(episodes) {
   const { ideas } = await post('/api/ai/episode-ideas', { episodes });

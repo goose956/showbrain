@@ -1,5 +1,8 @@
 import { Router } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
+import { getEpisodes, getChannels, upsertEpisode } from '../services/store.js';
+import { fetchCaptions, cleanupCaptions } from '../services/captions.js';
+import { analyseDimensions, analyseEpisode } from '../services/analyse.js';
 
 const router = Router();
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -541,6 +544,142 @@ Return 5 tactical insights as JSON. Each insight must:
     const { insights } = parseJson(text);
     res.json({ insights });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Outlier Analysis ──────────────────────────────────────────────────────────
+// POST /api/ai/outlier-analysis
+// Transcribes top 5 videos per channel (if needed), then analyses WHY they
+// outperformed and what patterns emerge across channels.
+router.post('/outlier-analysis', async (req, res) => {
+  const userId = req.userId;
+  try {
+    const [channels, allEpisodes] = await Promise.all([
+      getChannels(userId),
+      getEpisodes(userId),
+    ]);
+
+    const channelData = [];
+
+    for (const ch of channels) {
+      const eps = allEpisodes.filter(e => e.channelId === ch.id);
+      const top5 = [...eps]
+        .filter(e => e.viewCount > 0)
+        .sort((a, b) => b.viewCount - a.viewCount)
+        .slice(0, 5);
+
+      const avgViews = eps.filter(e => e.viewCount > 0).reduce((s, e) => s + e.viewCount, 0) / (eps.filter(e => e.viewCount > 0).length || 1);
+
+      const enriched = [];
+      for (const ep of top5) {
+        let transcript = ep.transcript;
+        let dimensions = ep.dimensions;
+        let summary = ep.summary;
+
+        // Fetch transcript if not already present
+        if (!transcript) {
+          try {
+            const raw = await fetchCaptions(ep.videoId);
+            transcript = await cleanupCaptions(raw, ep.title);
+            const [analysis, dims] = await Promise.all([
+              analyseEpisode(transcript, ep.title),
+              analyseDimensions(transcript, ep.title),
+            ]);
+            summary = analysis.summary;
+            dimensions = { ...ep.dimensions, ...dims };
+            await upsertEpisode(userId, {
+              ...ep,
+              transcript,
+              summary,
+              topics: analysis.topics,
+              sentiment: analysis.sentiment,
+              dimensions,
+              transcriptStatus: 'ok',
+              syncedAt: new Date().toISOString(),
+            });
+          } catch {
+            // No captions available — use title analysis only
+          }
+        }
+
+        const multiplier = avgViews > 0 ? ep.viewCount / avgViews : null;
+        enriched.push({
+          title: ep.title,
+          viewCount: ep.viewCount,
+          multiplier: multiplier ? parseFloat(multiplier.toFixed(1)) : null,
+          publishedAt: ep.publishedAt,
+          format: dimensions?.format,
+          hookType: dimensions?.hookType,
+          contentType: dimensions?.contentType,
+          emotionalTone: dimensions?.emotionalTone,
+          topicCluster: dimensions?.topicCluster,
+          titleStructure: dimensions?.titleStructure,
+          summary: summary || null,
+          openingLines: transcript ? transcript.substring(0, 400) : null,
+        });
+      }
+
+      channelData.push({
+        channelName: ch.name,
+        subscriberCount: ch.subscriberCount,
+        avgViews: Math.round(avgViews),
+        totalVideos: eps.length,
+        topVideos: enriched,
+      });
+    }
+
+    const response = await client.messages.create({
+      model: 'claude-opus-4-8',
+      max_tokens: 4000,
+      thinking: { type: 'adaptive' },
+      messages: [{
+        role: 'user',
+        content: `You are a YouTube content strategist. Analyse the top 5 performing videos for each channel below and identify WHY they outperformed — look for patterns across titles, hooks, formats, topics, and opening lines.
+
+Channel data with top videos (viewMultiplier = how many times the channel average this video got):
+${JSON.stringify(channelData, null, 2)}
+
+Return JSON only, no markdown:
+{
+  "outlierPatterns": [
+    {
+      "pattern": "Short name for the pattern",
+      "finding": "Specific observation — which channels, which videos, what the data shows",
+      "strength": "strong|moderate",
+      "examples": ["Video title 1 (Channel)", "Video title 2 (Channel)"]
+    }
+  ],
+  "hookAnalysis": {
+    "dominantHook": "The hook type that appears most in top videos across channels",
+    "whyItWorks": "Why this hook drives outsized views in this niche",
+    "bestExample": "Title of the best example"
+  },
+  "topicClusters": [
+    {
+      "topic": "Topic cluster name",
+      "performance": "How much better these videos do vs channel average",
+      "channels": ["channel names where this works"]
+    }
+  ],
+  "titlePatterns": [
+    "Specific title formula that recurs in top videos — e.g. 'How I [outcome] without [pain point]'"
+  ],
+  "steal": [
+    "Specific, actionable thing to copy — e.g. 'Open with a dollar figure in the first 10 seconds'",
+    "Specific thing 2",
+    "Specific thing 3",
+    "Specific thing 4",
+    "Specific thing 5"
+  ]
+}`,
+      }],
+    });
+
+    const text = response.content.find(b => b.type === 'text')?.text || '';
+    res.json(parseJson(text));
+  } catch (err) {
+    console.error('[outlier-analysis]', err.message);
     res.status(500).json({ error: err.message });
   }
 });
