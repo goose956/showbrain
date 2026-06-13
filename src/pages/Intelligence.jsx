@@ -263,7 +263,7 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
             <h1 className="text-th-tx1 font-semibold text-lg">Episode Intelligence</h1>
             <p className="text-th-tx3 text-xs mt-0.5">
               Claude extracts every dimension from transcript — no manual tagging.
-              {episodesWithDims.length < channelEpisodes.length && (
+              {activeChannel === channels[0]?.id && episodesWithDims.length < channelEpisodes.length && (
                 <span className="text-amber-400 ml-2">{channelEpisodes.length - episodesWithDims.length} not yet analysed.</span>
               )}
             </p>
