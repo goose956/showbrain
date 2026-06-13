@@ -72,8 +72,12 @@ function MiniBar({ value, max, colorClass }) {
 
 export default function Overview({ episodes, channels, onNavigate }) {
   const stats = useMemo(() => {
-    const withStats  = episodes.filter(e => e.viewCount > 0);
-    const analysed   = episodes.filter(e => e.summary);
+    // Primary channel only — exclude compare-only channels
+    const primary = channels.find(c => c.isPrimary) || channels.find(c => !c.compareOnly) || channels[0] || null;
+    const primaryEps = primary ? episodes.filter(e => e.channelId === primary.id) : episodes;
+
+    const withStats  = primaryEps.filter(e => e.viewCount > 0);
+    const analysed   = primaryEps.filter(e => e.summary);
     const totalViews = withStats.reduce((s, e) => s + (e.viewCount || 0), 0);
     const totalLikes = withStats.reduce((s, e) => s + (e.likeCount || 0), 0);
     const totalComments = withStats.reduce((s, e) => s + (e.commentCount || 0), 0);
@@ -114,11 +118,7 @@ export default function Overview({ episodes, channels, onNavigate }) {
       .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
       .slice(0, 5);
 
-    // Primary channel
-    const primary = channels.find(c => c.isPrimary) || channels[0] || null;
-
     return {
-      totalChannels: channels.length,
       withStats, analysed, totalViews, totalLikes, totalComments,
       avgViews, avgDuration, sentimentMap, topTopics,
       formatMap, topEpisodes, recentAnalysed, primary,
@@ -159,18 +159,18 @@ export default function Overview({ episodes, channels, onNavigate }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatCard
             icon={TvMinimalPlay} iconBg="bg-blue-500"
-            label="Channels" value={stats.totalChannels}
-            sub={stats.primary ? `Primary: ${stats.primary.name}` : 'No primary set'}
+            label="Channel" value={stats.primary?.name || '—'}
+            sub={stats.primary ? `${stats.withStats.length.toLocaleString()} episodes tracked` : 'No channel set'}
           />
           <StatCard
             icon={FileText} iconBg="bg-indigo-500"
             label="Episodes tracked" value={stats.withStats.length.toLocaleString()}
-            sub={`of ${episodes.length.toLocaleString()} imported`}
+            sub={`of ${stats.withStats.length.toLocaleString()} imported`}
           />
           <StatCard
             icon={Sparkles} iconBg="bg-violet-500"
             label="Analysed" value={stats.analysed.length.toLocaleString()}
-            sub={stats.analysed.length ? `${Math.round(stats.analysed.length / Math.max(episodes.length, 1) * 100)}% of library` : 'None yet'}
+            sub={stats.analysed.length ? `${Math.round(stats.analysed.length / Math.max(stats.withStats.length, 1) * 100)}% of library` : 'None yet'}
           />
           <StatCard
             icon={Eye} iconBg="bg-emerald-500"
