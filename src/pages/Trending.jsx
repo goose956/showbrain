@@ -1,9 +1,48 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Zap, RefreshCw, Loader2, Plus, X, ExternalLink, PenLine,
-  Rss, PlayCircle, Users, AlertCircle, Clock, TrendingUp, Settings,
+  Rss, PlayCircle, Users, AlertCircle, Clock, TrendingUp, Settings, Play,
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
+
+// ── Video player modal ────────────────────────────────────────────────────────
+
+function VideoModal({ video, onClose }) {
+  if (!video) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-3xl mx-4"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-sm font-semibold leading-snug line-clamp-2">{video.title}</p>
+            <p className="text-white/60 text-xs mt-1">{video.channelName}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors shrink-0"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+          <iframe
+            src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1`}
+            title={video.title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="absolute inset-0 w-full h-full rounded-xl"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function timeAgo(hoursAgo) {
   if (!hoursAgo && hoursAgo !== 0) return '';
@@ -138,12 +177,18 @@ function ConfigPanel({ config, onSave, onClose }) {
 
 // ── Video card ────────────────────────────────────────────────────────────────
 
-function VideoCard({ video, onMakeVideo, source }) {
+function VideoCard({ video, onMakeVideo, onWatch, source }) {
   return (
     <div className="bg-th-surface border border-th-border rounded-xl overflow-hidden hover:border-th-accent/30 transition-colors flex flex-col">
       {video.thumbnail && (
-        <div className="relative">
+        <div className="relative group cursor-pointer" onClick={() => onWatch(video)}>
           <img src={video.thumbnail} alt="" className="w-full aspect-video object-cover" />
+          {/* Play overlay */}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+              <Play size={20} className="text-gray-900 fill-gray-900 ml-0.5" />
+            </div>
+          </div>
           <div className="absolute top-2 left-2">
             <span className="text-[10px] font-medium bg-black/70 text-white px-2 py-0.5 rounded-full">{source}</span>
           </div>
@@ -173,6 +218,13 @@ function VideoCard({ video, onMakeVideo, source }) {
           )}
         </div>
         <div className="flex gap-2 mt-auto">
+          <button
+            onClick={() => onWatch(video)}
+            className="p-1.5 rounded-lg border border-th-border text-th-tx4 hover:text-red-400 hover:border-red-500/30 transition-colors"
+            title="Watch video"
+          >
+            <Play size={12} />
+          </button>
           <button
             onClick={() => onMakeVideo(video.title)}
             className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-th-accent/10 hover:bg-th-accent/20 border border-th-accent/20 hover:border-th-accent/40 text-th-accent text-[11px] font-medium transition-colors"
@@ -242,6 +294,7 @@ export default function Trending({ channels = [], onWriteScript }) {
   const [showConfig, setShowConfig] = useState(false);
   const [fetchedAt, setFetchedAt] = useState(null);
   const [error, setError]         = useState('');
+  const [watchVideo, setWatchVideo] = useState(null);
 
   const compareChannels = channels.filter(c => c.compareOnly);
 
@@ -390,7 +443,7 @@ export default function Trending({ channels = [], onWriteScript }) {
                 {data.competitorVideos?.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {data.competitorVideos.map(v => (
-                      <VideoCard key={v.videoId} video={v} source={v.channelName} onMakeVideo={handleMakeVideo} />
+                      <VideoCard key={v.videoId} video={v} source={v.channelName} onMakeVideo={handleMakeVideo} onWatch={setWatchVideo} />
                     ))}
                   </div>
                 )}
@@ -403,7 +456,7 @@ export default function Trending({ channels = [], onWriteScript }) {
                 <SectionHeader icon={PlayCircle} iconClass="text-red-400" title="Trending in your niche" count={data.youtubeVideos.length} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {data.youtubeVideos.map(v => (
-                    <VideoCard key={v.videoId} video={v} source="YouTube" onMakeVideo={handleMakeVideo} />
+                    <VideoCard key={v.videoId} video={v} source="YouTube" onMakeVideo={handleMakeVideo} onWatch={setWatchVideo} />
                   ))}
                 </div>
               </div>
@@ -425,5 +478,6 @@ export default function Trending({ channels = [], onWriteScript }) {
         )}
       </div>
     </div>
+    <VideoModal video={watchVideo} onClose={() => setWatchVideo(null)} />
   );
 }
