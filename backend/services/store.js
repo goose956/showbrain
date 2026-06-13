@@ -482,3 +482,22 @@ export async function replyTicket({ ticketId, sender, senderRole, body }) {
 export async function updateTicketStatus(id, status) {
   await query(`UPDATE support_tickets SET status = $1, updated_at = NOW() WHERE id = $2`, [status, id]);
 }
+
+// ── admin settings (api keys etc) ────────────────────────────────────────────
+
+export async function getAdminSettings() {
+  const { rows } = await query('SELECT key, value FROM admin_settings');
+  return Object.fromEntries(rows.map(r => [r.key, r.value]));
+}
+
+export async function setAdminSetting(key, value) {
+  await query(
+    `INSERT INTO admin_settings (key, value) VALUES ($1, $2)
+     ON CONFLICT (key) DO UPDATE SET value = $2`,
+    [key, value]
+  );
+}
+
+export async function deleteAdminSetting(key) {
+  await query('DELETE FROM admin_settings WHERE key = $1', [key]);
+}

@@ -1,6 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { getApiKey } from './keys.js';
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+async function getClient() {
+  return new Anthropic({ apiKey: await getApiKey('ANTHROPIC_API_KEY') });
+}
 
 function parseJson(text) {
   const match = text.match(/\{[\s\S]*\}/);
@@ -9,6 +12,7 @@ function parseJson(text) {
 }
 
 export async function analyseEpisode(transcript, title) {
+  const client = await getClient();
   const response = await client.messages.create({
     model: 'claude-opus-4-8',
     max_tokens: 1024,
@@ -31,6 +35,7 @@ Return JSON only:
 }
 
 export async function analyseDimensions(transcript, title) {
+  const client = await getClient();
   const response = await client.messages.create({
     model: 'claude-opus-4-8',
     max_tokens: 512,
@@ -60,6 +65,7 @@ Return JSON only:
 // Batch title analysis — cheap Haiku call, no transcript needed
 export async function analyseTitlesBatch(videos) {
   const list = videos.map((v, i) => `${i}: ${v.title}`).join('\n');
+  const client = await getClient();
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 4096,
@@ -96,6 +102,7 @@ export async function generatePosts(episode, platforms) {
 
   const instructions = platforms.map(p => platformInstructions[p]).filter(Boolean).join('\n');
 
+  const client = await getClient();
   const response = await client.messages.create({
     model: 'claude-opus-4-8',
     max_tokens: 1024,

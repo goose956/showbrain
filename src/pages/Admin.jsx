@@ -3,7 +3,7 @@ import {
   Trash2, Shield, User, RefreshCw, AlertCircle, ChevronLeft,
   BarChart2, MessageCircle, Users, Activity, Globe,
   Clock, CheckCircle, Loader2, Send, ChevronDown, ChevronRight,
-  TrendingUp, Eye, Smartphone,
+  TrendingUp, Eye, Smartphone, Key, Eye as EyeIcon, EyeOff, Save,
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 
@@ -453,10 +453,132 @@ function SupportTab({ currentUser }) {
 
 // ── Main Admin page ───────────────────────────────────────────────────────────
 
+// ── API Keys tab ──────────────────────────────────────────────────────────────
+
+const KEY_LABELS = {
+  ANTHROPIC_API_KEY:  'Anthropic (Claude)',
+  YOUTUBE_API_KEY:    'YouTube Data API',
+  DEEPGRAM_API_KEY:   'Deepgram',
+  OPENAI_API_KEY:     'OpenAI',
+  SUPADATA_API_KEY:   'Supadata',
+};
+
+function ApiKeysTab() {
+  const [keys, setKeys] = useState([]);
+  const [edits, setEdits] = useState({});
+  const [show, setShow] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    apiFetch('/api/admin/api-keys').then(r => r.json()).then(data => {
+      setKeys(data);
+      setEdits(Object.fromEntries(data.map(k => [k.name, ''])));
+    }).catch(e => setError(e.message));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const updates = Object.fromEntries(
+        Object.entries(edits).filter(([, v]) => v !== '')
+      );
+      await apiFetch('/api/admin/api-keys', { method: 'PUT', body: JSON.stringify(updates) });
+      // Reload to show updated masked values
+      const data = await apiFetch('/api/admin/api-keys').then(r => r.json());
+      setKeys(data);
+      setEdits(Object.fromEntries(data.map(k => [k.name, ''])));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const sourceBadge = (source) => {
+    if (source === 'db')    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-medium">DB override</span>;
+    if (source === 'env')   return <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-medium">env var</span>;
+    return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">not set</span>;
+  };
+
+  return (
+    <div className="space-y-4">
+      {error && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          <AlertCircle size={14} />
+          {error}
+        </div>
+      )}
+      <div className="bg-th-raised border border-th-border rounded-xl p-4 space-y-1">
+        <p className="text-th-tx3 text-xs mb-4">
+          Keys saved here override environment variables. Leave a field blank to keep the current value. Set to empty to clear a DB override and fall back to the env var.
+        </p>
+        {keys.map(k => (
+          <div key={k.name} className="py-3 border-b border-th-border last:border-0">
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-th-tx1 text-sm font-medium">{KEY_LABELS[k.name] || k.name}</span>
+                {sourceBadge(k.source)}
+              </div>
+              <span className="text-th-tx4 text-xs font-mono">{k.name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <input
+                  type={show[k.name] ? 'text' : 'password'}
+                  placeholder={k.hasValue ? k.masked : 'Not set — paste key here'}
+                  value={edits[k.name] || ''}
+                  onChange={e => setEdits(prev => ({ ...prev, [k.name]: e.target.value }))}
+                  className="w-full bg-th-surface border border-th-border rounded-lg px-3 py-2 pr-9 text-sm text-th-tx1 placeholder-th-tx4 focus:outline-none focus:ring-1 focus:ring-th-accent font-mono"
+                />
+                <button
+                  onClick={() => setShow(prev => ({ ...prev, [k.name]: !prev[k.name] }))}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-th-tx4 hover:text-th-tx2"
+                >
+                  {show[k.name] ? <EyeOff size={13} /> : <EyeIcon size={13} />}
+                </button>
+              </div>
+              {edits[k.name] && (
+                <button
+                  onClick={() => setEdits(prev => ({ ...prev, [k.name]: '' }))}
+                  className="text-th-tx4 hover:text-th-tx2 text-xs"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={handleSave}
+          disabled={saving || Object.values(edits).every(v => v === '')}
+          className="flex items-center gap-2 px-4 py-2 bg-th-accent text-white rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+        >
+          {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+          Save keys
+        </button>
+        {saved && (
+          <span className="flex items-center gap-1.5 text-green-400 text-sm">
+            <CheckCircle size={13} />
+            Saved
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const TABS = [
   { id: 'analytics', label: 'Analytics', icon: BarChart2 },
   { id: 'support',   label: 'Support',   icon: MessageCircle },
   { id: 'members',   label: 'Members',   icon: Users },
+  { id: 'apikeys',   label: 'API Keys',  icon: Key },
 ];
 
 export default function Admin({ currentUser, onNavigate }) {
@@ -494,6 +616,7 @@ export default function Admin({ currentUser, onNavigate }) {
       {tab === 'analytics' && <AnalyticsTab />}
       {tab === 'support'   && <SupportTab currentUser={currentUser} />}
       {tab === 'members'   && <MembersTab currentUser={currentUser} />}
+      {tab === 'apikeys'   && <ApiKeysTab />}
     </div>
   );
 }

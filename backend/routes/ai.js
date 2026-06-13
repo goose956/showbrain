@@ -3,9 +3,12 @@ import Anthropic from '@anthropic-ai/sdk';
 import { getEpisodes, getChannels, upsertEpisode } from '../services/store.js';
 import { fetchCaptions, cleanupCaptions } from '../services/captions.js';
 import { analyseDimensions, analyseEpisode } from '../services/analyse.js';
+import { getApiKey } from '../services/keys.js';
 
 const router = Router();
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+async function getClient() {
+  return new Anthropic({ apiKey: await getApiKey('ANTHROPIC_API_KEY') });
+}
 
 function parseJson(text) {
   const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '');
@@ -32,7 +35,7 @@ router.post('/search', async (req, res) => {
 
     if (!episodeList.trim()) return res.json([]);
 
-    const matchRes = await client.messages.create({
+    const matchRes = await (await getClient()).messages.create({
       model: 'claude-opus-4-8',
       max_tokens: 1024,
       messages: [{
@@ -66,7 +69,7 @@ Up to 5 results, ranked by relevance. Empty array if nothing matches.`,
         if (!episode.transcript) return { episode, relevance, passage: null, timestampSecs: null };
 
         try {
-          const excerptRes = await client.messages.create({
+          const excerptRes = await (await getClient()).messages.create({
             model: 'claude-opus-4-8',
             max_tokens: 512,
             messages: [{
@@ -110,7 +113,7 @@ router.post('/show-notes', async (req, res) => {
   if (!episode) return res.status(400).json({ error: 'episode required' });
 
   try {
-    const response = await client.messages.create({
+    const response = await (await getClient()).messages.create({
       model: 'claude-opus-4-8',
       max_tokens: 2048,
       messages: [{
@@ -143,7 +146,7 @@ router.post('/chapters', async (req, res) => {
   if (!transcript) return res.status(400).json({ error: 'transcript required' });
 
   try {
-    const response = await client.messages.create({
+    const response = await (await getClient()).messages.create({
       model: 'claude-opus-4-8',
       max_tokens: 1024,
       messages: [{
@@ -179,7 +182,7 @@ router.post('/cross-channel-insights', async (req, res) => {
   if (!channelStats) return res.status(400).json({ error: 'channelStats required' });
 
   try {
-    const response = await client.messages.create({
+    const response = await (await getClient()).messages.create({
       model: 'claude-opus-4-8',
       max_tokens: 3000,
       thinking: { type: 'adaptive' },
@@ -265,7 +268,7 @@ Top videos:
 ${ch.topVideos.map(v => `- "${v.title}" — ${v.viewCount?.toLocaleString()} views | topic: ${v.topicCluster || '?'} | hook: ${v.hookType || '?'}`).join('\n')}`).join('\n\n')}` : '';
 
   try {
-    const response = await client.messages.create({
+    const response = await (await getClient()).messages.create({
       model: 'claude-opus-4-8',
       max_tokens: 4096,
       thinking: { type: 'adaptive' },
@@ -335,7 +338,7 @@ router.post('/script-prep', async (req, res) => {
   }));
 
   try {
-    const response = await client.messages.create({
+    const response = await (await getClient()).messages.create({
       model: 'claude-opus-4-8',
       max_tokens: 2048,
       thinking: { type: 'adaptive' },
@@ -392,7 +395,7 @@ router.post('/script', async (req, res) => {
     .join('\n\n');
 
   try {
-    const response = await client.messages.create({
+    const response = await (await getClient()).messages.create({
       model: 'claude-opus-4-8',
       max_tokens: 8096,
       thinking: { type: 'adaptive' },
@@ -450,7 +453,7 @@ router.post('/script/section', async (req, res) => {
   if (!section || !brief || !dataBrief) return res.status(400).json({ error: 'section, brief and dataBrief required' });
 
   try {
-    const response = await client.messages.create({
+    const response = await (await getClient()).messages.create({
       model: 'claude-opus-4-8',
       max_tokens: 2048,
       messages: [{
@@ -521,7 +524,7 @@ router.post('/channel-insights', async (req, res) => {
   }));
 
   try {
-    const response = await client.messages.create({
+    const response = await (await getClient()).messages.create({
       model: 'claude-opus-4-8',
       max_tokens: 2048,
       thinking: { type: 'adaptive' },
@@ -698,7 +701,7 @@ router.get('/outlier-analysis/stream', async (req, res) => {
 
     // Stream Claude response token-by-token through SSE
     let fullText = '';
-    const stream = await client.messages.stream({
+    const stream = await (await getClient()).messages.stream({
       model: 'claude-opus-4-8',
       max_tokens: 5000,
       thinking: { type: 'adaptive' },

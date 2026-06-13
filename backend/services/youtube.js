@@ -1,5 +1,6 @@
-const API_KEY = process.env.YOUTUBE_API_KEY;
+import { getApiKey } from './keys.js';
 const BASE = 'https://www.googleapis.com/youtube/v3';
+const ytKey = () => getApiKey('YOUTUBE_API_KEY');
 
 // Resolve a channel URL/handle/@handle/ID to a channelId
 export async function resolveChannelId(input) {
@@ -12,7 +13,7 @@ export async function resolveChannelId(input) {
   const handle = handleMatch ? handleMatch[1] : input.replace(/^@/, '');
 
   const res = await fetch(
-    `${BASE}/channels?part=id&forHandle=${encodeURIComponent(handle)}&key=${API_KEY}`
+    `${BASE}/channels?part=id&forHandle=${encodeURIComponent(handle)}&key=${await ytKey()}`
   );
   const data = await res.json();
   if (data.error) throw new Error(`YouTube API: ${data.error.message}`);
@@ -24,7 +25,7 @@ export async function resolveChannelId(input) {
 // Fetch channel metadata
 export async function getChannelInfo(channelId) {
   const res = await fetch(
-    `${BASE}/channels?part=snippet,statistics&id=${channelId}&key=${API_KEY}`
+    `${BASE}/channels?part=snippet,statistics&id=${channelId}&key=${await ytKey()}`
   );
   const data = await res.json();
   if (data.error) throw new Error(`YouTube API: ${data.error.message}`);
@@ -44,7 +45,7 @@ export async function getChannelInfo(channelId) {
 
 async function getUploadsPlaylistId(channelId) {
   const res = await fetch(
-    `${BASE}/channels?part=contentDetails&id=${channelId}&key=${API_KEY}`
+    `${BASE}/channels?part=contentDetails&id=${channelId}&key=${await ytKey()}`
   );
   const data = await res.json();
   if (data.error) throw new Error(`YouTube API: ${data.error.message}`);
@@ -60,7 +61,7 @@ export async function getChannelVideosPage(channelId, { pageToken = null, pageSi
     part: 'snippet',
     playlistId,
     maxResults: Math.min(pageSize, 50),
-    key: API_KEY,
+    key: await ytKey(),
     ...(pageToken ? { pageToken } : {}),
   });
 
@@ -136,7 +137,7 @@ export async function getVideoDurations(videoIds) {
   for (let i = 0; i < videoIds.length; i += 50) {
     const chunk = videoIds.slice(i, i + 50);
     const res = await fetch(
-      `${BASE}/videos?part=contentDetails,statistics&id=${chunk.join(',')}&key=${API_KEY}`
+      `${BASE}/videos?part=contentDetails,statistics&id=${chunk.join(',')}&key=${await ytKey()}`
     );
     const data = await res.json();
     for (const item of data.items || []) {
@@ -160,7 +161,7 @@ export async function getVideoDurations(videoIds) {
 export async function searchRecentVideos(query, { maxResults = 15, days = 7 } = {}) {
   const publishedAfter = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
   const res = await fetch(
-    `${BASE}/search?part=snippet&q=${encodeURIComponent(query)}&type=video&order=viewCount&publishedAfter=${encodeURIComponent(publishedAfter)}&maxResults=${maxResults}&key=${API_KEY}`
+    `${BASE}/search?part=snippet&q=${encodeURIComponent(query)}&type=video&order=viewCount&publishedAfter=${encodeURIComponent(publishedAfter)}&maxResults=${maxResults}&key=${await ytKey()}`
   );
   const data = await res.json();
   if (data.error) throw new Error(`YouTube search: ${data.error.message}`);

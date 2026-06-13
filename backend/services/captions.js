@@ -1,13 +1,14 @@
 import OpenAI from 'openai';
+import { getApiKey } from './keys.js';
 
-const SUPADATA_API_KEY = process.env.SUPADATA_API_KEY;
-
-function getOpenAI() {
-  if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is not set');
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+async function getOpenAI() {
+  const key = await getApiKey('OPENAI_API_KEY');
+  if (!key) throw new Error('OPENAI_API_KEY is not set');
+  return new OpenAI({ apiKey: key });
 }
 
 export async function fetchCaptions(videoId) {
+  const SUPADATA_API_KEY = await getApiKey('SUPADATA_API_KEY');
   if (!SUPADATA_API_KEY) throw new Error('SUPADATA_API_KEY is not set');
 
   const res = await fetch(
@@ -35,7 +36,7 @@ export async function fetchCaptions(videoId) {
 }
 
 export async function cleanupCaptions(rawText, title) {
-  const response = await getOpenAI().chat.completions.create({
+  const response = await (await getOpenAI()).chat.completions.create({
     model: 'gpt-4o-mini',
     max_tokens: 8192,
     messages: [

@@ -159,6 +159,11 @@ export async function initSchema() {
     );
 
     CREATE INDEX IF NOT EXISTS support_messages_ticket ON support_messages (ticket_id, sent_at);
+
+    CREATE TABLE IF NOT EXISTS admin_settings (
+      key   TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
   `);
   console.log('[db] Schema ready');
 }

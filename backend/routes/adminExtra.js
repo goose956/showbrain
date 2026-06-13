@@ -3,9 +3,17 @@ import { randomUUID } from 'crypto';
 import {
   getPageViewStats, getRecentPageViews,
   getTickets, getTicket, replyTicket, updateTicketStatus, createTicket,
-  getMembers,
+  getMembers, getAdminSettings, setAdminSetting, deleteAdminSetting,
 } from '../services/store.js';
 import { query } from '../services/db.js';
+
+const API_KEY_NAMES = [
+  'ANTHROPIC_API_KEY',
+  'YOUTUBE_API_KEY',
+  'DEEPGRAM_API_KEY',
+  'OPENAI_API_KEY',
+  'SUPADATA_API_KEY',
+];
 
 // ── Admin router (/api/admin/*) ───────────────────────────────────────────────
 
@@ -115,6 +123,40 @@ supportRouter.post('/:id/reply', async (req, res) => {
     if (!ticket || ticket.user_id !== req.userId) return res.status(404).json({ error: 'Not found' });
     if (ticket.status === 'closed') return res.status(400).json({ error: 'Ticket is closed' });
     await replyTicket({ ticketId: req.params.id, sender: req.username, senderRole: 'user', body: body.trim() });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── API Key management ────────────────────────────────────────────────────────
+
+adminRouter.get('/api-keys', async (req, res) => {
+  try {
+    const stored = await getAdminSettings();
+    const keys = API_KEY_NAMES.map(name => {
+      const val = stored[name] || process.env[name] || '';
+      const masked = val.length > 4 ? '••••' + val.slice(-4) : val ? '••••' : '';
+      const source = stored[name] ? 'db' : process.env[name] ? 'env' : 'unset';
+      return { name, masked, source, hasValue: !!val };
+    });
+    res.json(keys);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+adminRouter.put('/api-keys', async (req, res) => {
+  try {
+    const updates = req.body; // { ANTHROPIC_API_KEY: '...', ... }
+    for (const [name, value] of Object.entries(updates)) {
+      if (!API_KEY_NAMES.includes(name)) continue;
+      if (value === '') {
+        await deleteAdminSetting(name);
+      } else {
+        await setAdminSetting(name, value);
+      }
+    }
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

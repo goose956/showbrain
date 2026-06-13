@@ -1,9 +1,10 @@
 import { createReadStream } from 'fs';
+import { getApiKey } from './keys.js';
 
-const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY;
 const DG_PARAMS = 'model=nova-3&smart_format=true&punctuate=true&paragraphs=true&diarize=true';
 
 export async function transcribeUrl(audioUrl) {
+  const DEEPGRAM_API_KEY = await getApiKey('DEEPGRAM_API_KEY');
   if (!DEEPGRAM_API_KEY) throw new Error('DEEPGRAM_API_KEY is not set');
 
   const response = await fetch(
@@ -30,6 +31,7 @@ export async function transcribeUrl(audioUrl) {
 }
 
 export async function transcribeFile(filePath) {
+  const DEEPGRAM_API_KEY = await getApiKey('DEEPGRAM_API_KEY');
   if (!DEEPGRAM_API_KEY) throw new Error('DEEPGRAM_API_KEY is not set');
 
   const stream = createReadStream(filePath);
