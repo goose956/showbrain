@@ -96,7 +96,7 @@ export default function Ideas({ episodes, channels = [], onWriteScript }) {
   const [ideas, setIdeas] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [useCompetitors, setUseCompetitors] = useState(false);
+  const [useCompetitors, setUseCompetitors] = useState(true);
 
   const primaryChannel = channels.find(c => c.isPrimary) || channels.find(c => !c.compareOnly);
   const compareChannels = channels.filter(c => c.compareOnly);
