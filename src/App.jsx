@@ -136,8 +136,10 @@ export default function App() {
     if (!localStorage.getItem(seenKey)) {
       localStorage.setItem(seenKey, '1');
       setShowWelcome(true);
+      setPage('channel');
+    } else {
+      setPage('overview');
     }
-    setPage('overview');
   };
 
   const handleLogout = () => {
