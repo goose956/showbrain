@@ -1,4 +1,5 @@
 import { query } from './db.js';
+import { randomUUID } from 'crypto';
 
 // ── mappers ───────────────────────────────────────────────────────────────────
 
@@ -380,4 +381,104 @@ export async function addWaitlistEmail(email) {
   );
   const { rows } = await query('SELECT COUNT(*) AS count FROM waitlist', []);
   return parseInt(rows[0].count, 10);
+}
+
+// ── page views ────────────────────────────────────────────────────────────────
+
+export async function logPageView({ id, userId, username, path, method, ip, userAgent, referrer }) {
+  await query(
+    `INSERT INTO page_views (id, user_id, username, path, method, ip, user_agent, referrer)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [id, userId || null, username || null, path, method || 'GET', ip || null, userAgent || null, referrer || null]
+  );
+}
+
+export async function getPageViewStats() {
+  const [summary, daily, topPaths, topUsers] = await Promise.all([
+    query(`SELECT
+      COUNT(*)                                              AS total,
+      COUNT(DISTINCT user_id)                               AS unique_users,
+      COUNT(*) FILTER (WHERE viewed_at > NOW() - INTERVAL '24 hours') AS last_24h,
+      COUNT(*) FILTER (WHERE viewed_at > NOW() - INTERVAL '7 days')  AS last_7d,
+      COUNT(*) FILTER (WHERE viewed_at > NOW() - INTERVAL '30 days') AS last_30d
+    FROM page_views`),
+    query(`SELECT
+      DATE_TRUNC('day', viewed_at) AS day,
+      COUNT(*) AS views,
+      COUNT(DISTINCT user_id) AS users
+    FROM page_views
+    WHERE viewed_at > NOW() - INTERVAL '30 days'
+    GROUP BY 1 ORDER BY 1`),
+    query(`SELECT path, COUNT(*) AS count
+    FROM page_views
+    WHERE viewed_at > NOW() - INTERVAL '30 days'
+    GROUP BY path ORDER BY count DESC LIMIT 20`),
+    query(`SELECT username, COUNT(*) AS views, MAX(viewed_at) AS last_seen
+    FROM page_views
+    WHERE user_id IS NOT NULL
+    GROUP BY username ORDER BY views DESC LIMIT 20`),
+  ]);
+  return {
+    summary: summary.rows[0],
+    daily: daily.rows,
+    topPaths: topPaths.rows,
+    topUsers: topUsers.rows,
+  };
+}
+
+export async function getRecentPageViews(limit = 100) {
+  const { rows } = await query(
+    `SELECT * FROM page_views ORDER BY viewed_at DESC LIMIT $1`, [limit]
+  );
+  return rows;
+}
+
+// ── support tickets ───────────────────────────────────────────────────────────
+
+export async function createTicket({ id, userId, username, subject, firstMessage }) {
+  await query(
+    `INSERT INTO support_tickets (id, user_id, username, subject) VALUES ($1, $2, $3, $4)`,
+    [id, userId, username, subject]
+  );
+  const msgId = randomUUID();
+  await query(
+    `INSERT INTO support_messages (id, ticket_id, sender, sender_role, body) VALUES ($1, $2, $3, 'user', $4)`,
+    [msgId, id, username, firstMessage]
+  );
+}
+
+export async function getTickets({ status } = {}) {
+  const { rows } = await query(
+    `SELECT t.*, COUNT(m.id) AS message_count
+     FROM support_tickets t
+     LEFT JOIN support_messages m ON m.ticket_id = t.id
+     ${status ? 'WHERE t.status = $1' : ''}
+     GROUP BY t.id
+     ORDER BY t.updated_at DESC`,
+    status ? [status] : []
+  );
+  return rows;
+}
+
+export async function getTicket(id) {
+  const [ticketRes, msgsRes] = await Promise.all([
+    query('SELECT * FROM support_tickets WHERE id = $1', [id]),
+    query('SELECT * FROM support_messages WHERE ticket_id = $1 ORDER BY sent_at', [id]),
+  ]);
+  return ticketRes.rows[0] ? { ...ticketRes.rows[0], messages: msgsRes.rows } : null;
+}
+
+export async function replyTicket({ ticketId, sender, senderRole, body }) {
+  const msgId = randomUUID();
+  await query(
+    `INSERT INTO support_messages (id, ticket_id, sender, sender_role, body) VALUES ($1, $2, $3, $4, $5)`,
+    [msgId, ticketId, sender, senderRole, body]
+  );
+  await query(
+    `UPDATE support_tickets SET updated_at = NOW() WHERE id = $1`, [ticketId]
+  );
+}
+
+export async function updateTicketStatus(id, status) {
+  await query(`UPDATE support_tickets SET status = $1, updated_at = NOW() WHERE id = $2`, [status, id]);
 }

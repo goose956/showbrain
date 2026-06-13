@@ -123,6 +123,42 @@ export async function initSchema() {
       ref           TEXT,
       clicked_at    TIMESTAMPTZ DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS page_views (
+      id          TEXT PRIMARY KEY,
+      user_id     TEXT REFERENCES members(id) ON DELETE SET NULL,
+      username    TEXT,
+      path        TEXT NOT NULL,
+      method      TEXT NOT NULL DEFAULT 'GET',
+      ip          TEXT,
+      user_agent  TEXT,
+      referrer    TEXT,
+      viewed_at   TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS page_views_viewed_at ON page_views (viewed_at DESC);
+    CREATE INDEX IF NOT EXISTS page_views_user_id   ON page_views (user_id);
+
+    CREATE TABLE IF NOT EXISTS support_tickets (
+      id          TEXT PRIMARY KEY,
+      user_id     TEXT REFERENCES members(id) ON DELETE SET NULL,
+      username    TEXT NOT NULL,
+      subject     TEXT NOT NULL,
+      status      TEXT NOT NULL DEFAULT 'open',
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS support_messages (
+      id          TEXT PRIMARY KEY,
+      ticket_id   TEXT NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+      sender      TEXT NOT NULL,
+      sender_role TEXT NOT NULL DEFAULT 'user',
+      body        TEXT NOT NULL,
+      sent_at     TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS support_messages_ticket ON support_messages (ticket_id, sent_at);
   `);
   console.log('[db] Schema ready');
 }

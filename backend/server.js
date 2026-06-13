@@ -10,11 +10,12 @@ import { initSchema } from './services/db.js';
 import { resolveChannelId, getChannelInfo, getChannelVideosPage, getAllChannelVideos, getVideoDurations } from './services/youtube.js';
 import { analyseTitlesBatch } from './services/analyse.js';
 import { syncChannel, getSyncState, processVideo, analyseTopVideos, getTopAnalysisState } from './services/sync.js';
-import { getChannels, getChannel, upsertChannel, deleteChannel, getEpisodes, getEpisodeByVideoId, getClicks, logClick, addWaitlistEmail, upsertEpisode, getMembers, getMemberById, getMemberByUsername, createMember, deleteMember, getUserSettings, setUserSettings, getPosts, savePost, updatePostStatus, deletePost, getIdeas, saveIdeas, deleteIdeas, getScripts, saveScript, deleteScript } from './services/store.js';
+import { getChannels, getChannel, upsertChannel, deleteChannel, getEpisodes, getEpisodeByVideoId, getClicks, logClick, addWaitlistEmail, upsertEpisode, getMembers, getMemberById, getMemberByUsername, createMember, deleteMember, getUserSettings, setUserSettings, getPosts, savePost, updatePostStatus, deletePost, getIdeas, saveIdeas, deleteIdeas, getScripts, saveScript, deleteScript, logPageView } from './services/store.js';
 import { generatePosts } from './services/analyse.js';
 import { hashPassword, verifyPassword, createToken, verifyToken } from './services/auth.js';
 import aiRoutes from './routes/ai.js';
 import trendingRoutes from './routes/trending.js';
+import { adminRouter, supportRouter } from './routes/adminExtra.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -128,8 +129,27 @@ app.delete('/api/admin/members/:id', requireAdmin, async (req, res) => {
 // ── all routes below require auth ─────────────────────────────────────────────
 
 app.use('/api', requireAuth);
+
+// Track every authenticated API request
+app.use('/api', (req, _res, next) => {
+  const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
+  logPageView({
+    id: randomUUID(),
+    userId: req.userId,
+    username: req.username,
+    path: req.path,
+    method: req.method,
+    ip,
+    userAgent: req.headers['user-agent'] || '',
+    referrer: req.headers['referer'] || '',
+  }).catch(() => {});
+  next();
+});
+
 app.use('/api/ai', aiRoutes);
 app.use('/api/trending', trendingRoutes);
+app.use('/api/admin', (req, res, next) => req.isAdmin ? next() : res.status(403).json({ error: 'Admin only' }), adminRouter);
+app.use('/api/support', supportRouter);
 
 // ── channels ──────────────────────────────────────────────────────────────────
 

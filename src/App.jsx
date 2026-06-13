@@ -20,6 +20,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Settings from './pages/Settings';
 import { getStoredUser, storeAuth, clearAuth, verifyStoredToken, apiFetch } from './lib/api';
+import SupportButton from './components/SupportButton';
 
 const EMPTY_SYNC = {
   running: false, channelId: null, channelName: null,
@@ -219,6 +220,7 @@ export default function App() {
         <main className="flex-1 min-h-0 overflow-y-auto">
           {renderPage()}
         </main>
+        {!currentUser.isAdmin && <SupportButton currentUser={currentUser.username} />}
       </div>
     </div>
   );
