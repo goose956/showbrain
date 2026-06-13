@@ -188,32 +188,66 @@ function SortIcon({ col, sortCol, dir }) {
 
 function OutlierPanel({ insights }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
 
-      {insights.overallTake && (
-        <div className="bg-th-accent/10 border border-th-accent/25 rounded-xl p-5">
-          <h3 className="text-th-accent text-sm font-semibold mb-3 flex items-center gap-2">
-            <Sparkles size={13} /> Overall take
+      {/* ── Per-channel breakdown ── */}
+      {insights.channels?.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-th-tx1 text-sm font-semibold flex items-center gap-2">
+            <Trophy size={14} className="text-th-accent" /> Top videos by channel
           </h3>
-          <p className="text-th-tx1 text-sm font-medium mb-3">{insights.overallTake.headline}</p>
-          {insights.overallTake.dataPoints?.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {insights.overallTake.dataPoints.map((dp, i) => (
-                <span key={i} className="text-[11px] bg-th-raised border border-th-border text-th-tx2 px-2.5 py-1 rounded-full">{dp}</span>
-              ))}
-            </div>
-          )}
-          <p className="text-th-tx2 text-xs leading-relaxed">{insights.overallTake.conclusion}</p>
+          {insights.channels.map((ch, i) => {
+            const pal = CHANNEL_PALETTE[i % CHANNEL_PALETTE.length];
+            return (
+              <div key={i} className="bg-th-surface border border-th-border rounded-xl overflow-hidden">
+                {/* Channel header */}
+                <div className={`px-4 py-3 border-b border-th-border flex items-center justify-between`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${pal.bar}`} />
+                    <span className="text-th-tx1 text-sm font-semibold">{ch.channelName}</span>
+                    {ch.avgViews > 0 && (
+                      <span className="text-th-tx4 text-xs">avg {fmt(ch.avgViews)} views</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Top videos list */}
+                <div className="divide-y divide-th-border/60">
+                  {ch.topVideos?.map((v, j) => (
+                    <div key={j} className="px-4 py-3 flex items-start gap-3">
+                      <span className={`text-[11px] font-bold tabular-nums px-1.5 py-0.5 rounded ${pal.light} shrink-0 mt-0.5`}>
+                        {v.multiplier ? `${v.multiplier}×` : `#${j + 1}`}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-th-tx1 text-xs font-medium leading-snug mb-0.5">{v.title}</p>
+                        <p className="text-th-tx3 text-xs leading-relaxed">{v.whyItWorked}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Channel pattern */}
+                {ch.channelPattern && (
+                  <div className={`px-4 py-3 border-t border-th-border bg-th-raised/30`}>
+                    <p className="text-th-tx3 text-xs leading-relaxed">
+                      <span className="text-th-tx2 font-medium">Pattern: </span>{ch.channelPattern}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {insights.outlierPatterns?.length > 0 && (
+      {/* ── Cross-channel patterns ── */}
+      {insights.crossChannelPatterns?.length > 0 && (
         <div>
           <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
-            <TrendingUp size={14} className="text-th-accent" /> Why the top videos outperformed
+            <TrendingUp size={14} className="text-th-accent" /> Patterns across all channels
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {insights.outlierPatterns.map((p, i) => (
+            {insights.crossChannelPatterns.map((p, i) => (
               <div key={i} className="bg-th-surface border border-th-border rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border shrink-0 ${p.strength === 'strong' ? 'bg-th-accent/10 text-th-accent border-th-accent/25' : 'bg-th-raised text-th-tx2 border-th-border'}`}>
@@ -221,78 +255,41 @@ function OutlierPanel({ insights }) {
                   </span>
                   <p className="text-th-tx1 text-xs font-medium">{p.pattern}</p>
                 </div>
-                <p className="text-th-tx2 text-xs leading-relaxed mb-2">{p.finding}</p>
-                {p.examples?.length > 0 && (
-                  <div className="flex flex-col gap-1">
-                    {p.examples.map((ex, j) => (
-                      <span key={j} className="text-th-tx4 text-[11px] italic">"{ex}"</span>
-                    ))}
-                  </div>
-                )}
+                <p className="text-th-tx2 text-xs leading-relaxed">{p.finding}</p>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {insights.hookAnalysis && (
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-5">
-          <h3 className="text-amber-300 text-sm font-semibold mb-1 flex items-center gap-2">
-            <Zap size={13} /> Dominant hook: {insights.hookAnalysis.dominantHook}
+      {/* ── Overall take ── */}
+      {insights.overallTake && (
+        <div className="bg-th-accent/10 border border-th-accent/25 rounded-xl p-5">
+          <h3 className="text-th-accent text-sm font-semibold mb-3 flex items-center gap-2">
+            <Sparkles size={13} /> Overall take
           </h3>
-          <p className="text-amber-200/80 text-sm leading-relaxed mb-2">{insights.hookAnalysis.whyItWorks}</p>
-          {insights.hookAnalysis.bestExample && (
-            <p className="text-amber-300/60 text-xs italic">Best example: "{insights.hookAnalysis.bestExample}"</p>
+          <p className="text-th-tx1 text-sm font-semibold mb-3">{insights.overallTake.headline}</p>
+          {insights.overallTake.dataPoints?.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {insights.overallTake.dataPoints.map((dp, i) => (
+                <span key={i} className="text-[11px] bg-th-raised border border-th-border text-th-tx2 px-2.5 py-1 rounded-full">{dp}</span>
+              ))}
+            </div>
           )}
-        </div>
-      )}
-
-      {insights.topicClusters?.length > 0 && (
-        <div>
-          <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
-            <BarChart2 size={14} className="text-sky-400" /> Topics that punch above average
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {insights.topicClusters.map((t, i) => (
-              <div key={i} className="bg-sky-500/10 border border-sky-500/20 rounded-xl p-4">
-                <p className="text-sky-300 text-xs font-semibold mb-1">{t.topic}</p>
-                <p className="text-sky-200/70 text-xs mb-2">{t.performance}</p>
-                <p className="text-th-tx4 text-[11px]">{t.channels?.join(', ')}</p>
+          <p className="text-th-tx2 text-sm leading-relaxed mb-4">{insights.overallTake.conclusion}</p>
+          {insights.overallTake.steal?.length > 0 && (
+            <div className="border-t border-th-accent/20 pt-4">
+              <p className="text-th-accent text-xs font-medium mb-2 flex items-center gap-1.5"><BookOpen size={11} /> What to steal</p>
+              <div className="space-y-2">
+                {insights.overallTake.steal.map((s, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className="w-4 h-4 rounded-full bg-th-accent/20 text-th-accent text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                    <p className="text-th-tx2 text-xs leading-relaxed">{s}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {insights.titlePatterns?.length > 0 && (
-        <div>
-          <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
-            <Target size={14} className="text-pink-400" /> Title formulas that work
-          </h3>
-          <div className="bg-th-surface border border-th-border rounded-xl divide-y divide-th-border">
-            {insights.titlePatterns.map((t, i) => (
-              <div key={i} className="flex items-start gap-3 px-4 py-3">
-                <span className="w-5 h-5 rounded-full bg-pink-500/20 border border-pink-500/30 text-pink-300 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-                <p className="text-th-tx2 text-sm leading-relaxed font-mono text-xs">{t}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {insights.steal?.length > 0 && (
-        <div>
-          <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
-            <BookOpen size={14} className="text-emerald-400" /> What to steal
-          </h3>
-          <div className="bg-th-surface border border-th-border rounded-xl divide-y divide-th-border">
-            {insights.steal.map((action, i) => (
-              <div key={i} className="flex items-start gap-3 px-4 py-3">
-                <span className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-                <p className="text-th-tx2 text-sm leading-relaxed">{action}</p>
-              </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
 

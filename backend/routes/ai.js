@@ -690,60 +690,51 @@ router.get('/outlier-analysis/stream', async (req, res) => {
       thinking: { type: 'adaptive' },
       messages: [{
         role: 'user',
-        content: `You are a YouTube content strategist. You have two datasets:
+        content: `You are a YouTube content strategist. Analyse the top 5 performing videos for each channel. Structure your analysis in three parts: per-channel breakdown, cross-channel patterns, then overall take.
 
-1. Top 5 performing videos per channel with full context (titles, hooks, transcripts, view multipliers)
-2. Aggregated stats across all top videos
-
-Your job: use the hard data to draw an overall conclusion about what wins in this niche, then dig into the WHY using the individual video data.
-
-AGGREGATED STATS (use these exact numbers in overallTake):
+AGGREGATED STATS across all top videos:
 ${JSON.stringify(aggregated, null, 2)}
 
-INDIVIDUAL CHANNEL DATA (viewMultiplier = how many times their channel average):
+PER-CHANNEL DATA (viewMultiplier = how many times their channel average this video got):
 ${JSON.stringify(channelData, null, 2)}
 
 Return JSON only, no markdown:
 {
+  "channels": [
+    {
+      "channelName": "exact channel name",
+      "avgViews": 12345,
+      "topVideos": [
+        {
+          "title": "exact video title",
+          "multiplier": 3.2,
+          "whyItWorked": "One sentence — specific reason based on hook, topic, format, or opening"
+        }
+      ],
+      "channelPattern": "1-2 sentences on what this channel's top videos have in common — be specific"
+    }
+  ],
+  "crossChannelPatterns": [
+    {
+      "pattern": "Short name",
+      "finding": "Specific finding with channel names and numbers — e.g. '4 of 5 channels saw their highest-multiplier video use a bold-claim hook'",
+      "strength": "strong|moderate"
+    }
+  ],
   "overallTake": {
-    "headline": "One punchy sentence summarising what wins in this niche",
+    "headline": "One punchy sentence summarising what wins across this niche",
     "dataPoints": [
-      "X% of top videos used [hook type] hooks",
-      "Top videos averaged Xx the channel average views",
-      "Other hard stat with % or number from the aggregated data"
+      "X% of top videos used [hook] hooks",
+      "Top videos averaged Xx the channel average",
+      "Another hard stat from the aggregated data"
     ],
-    "conclusion": "2-3 sentences on what this means — what the data collectively says about what works and why"
-  },
-  "outlierPatterns": [
-    {
-      "pattern": "Short name for the pattern",
-      "finding": "Specific observation backed by data — which channels, which videos, what numbers",
-      "strength": "strong|moderate",
-      "examples": ["Video title 1 (Channel)", "Video title 2 (Channel)"]
-    }
-  ],
-  "hookAnalysis": {
-    "dominantHook": "The hook type that dominates top videos",
-    "whyItWorks": "Why this hook drives outsized views in this niche specifically",
-    "bestExample": "Title of the best example"
-  },
-  "topicClusters": [
-    {
-      "topic": "Topic cluster name",
-      "performance": "How much better these videos do vs channel average",
-      "channels": ["channel names where this works"]
-    }
-  ],
-  "titlePatterns": [
-    "Specific title formula that recurs — e.g. 'How I [outcome] without [pain point]'"
-  ],
-  "steal": [
-    "Specific, actionable thing to copy — lead with the data if relevant",
-    "Specific thing 2",
-    "Specific thing 3",
-    "Specific thing 4",
-    "Specific thing 5"
-  ]
+    "conclusion": "2-3 sentences — what should someone take from this when planning their next video?",
+    "steal": [
+      "Specific actionable thing to copy",
+      "Specific thing 2",
+      "Specific thing 3"
+    ]
+  }
 }`,
       }],
     });
