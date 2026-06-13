@@ -174,7 +174,7 @@ export default function App() {
     switch (page) {
       case 'overview':     return <Overview episodes={episodes} channels={channels} onNavigate={handlePageChange} />;
       case 'channel':      return <Channel onEpisodesLoaded={setEpisodes} onChannelsLoaded={setChannels} syncStatus={syncStatus} onSyncStart={handleSyncStart} />;
-      case 'dashboard':    return <Dashboard episodes={episodes} />;
+      case 'dashboard':    return <Dashboard episodes={episodes} channels={channels} />;
       case 'search':       return <SemanticSearch episodes={episodes} />;
       case 'performance':  return <Performance episodes={episodes} />;
       case 'intelligence': return <Intelligence episodes={episodes} onEpisodesUpdate={setEpisodes} />;
