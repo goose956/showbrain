@@ -708,7 +708,7 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
           >
             {generating
               ? <><Loader2 size={14} className="animate-spin" />Transcribing &amp; analysing…</>
-              : <><Sparkles size={14} />{insights ? 'Re-analyse outliers' : 'Analyse top videos'}</>}
+              : <><Sparkles size={14} />Compare top videos</>}
           </button>
         </div>
 
