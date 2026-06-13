@@ -122,9 +122,9 @@ export default function Performance({ episodes, channels = [], onEpisodesUpdate 
         <div className="flex items-center gap-3 mb-6">
           <h1 className="text-th-tx1 text-2xl font-semibold">Performance</h1>
           {primaryChannel && (
-            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-th-accent/10 border border-th-accent/20 text-th-accent text-xs font-medium">
+            <span className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-th-accent/10 border border-th-accent/20 text-th-accent text-sm font-medium">
               {primaryChannel.thumbnail && (
-                <img src={primaryChannel.thumbnail} alt="" className="w-4 h-4 rounded-full object-cover" />
+                <img src={primaryChannel.thumbnail} alt="" className="w-5 h-5 rounded-full object-cover" />
               )}
               {primaryChannel.name}
             </span>
