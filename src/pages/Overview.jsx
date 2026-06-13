@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   TvMinimalPlay, FileText, Sparkles, Eye, ThumbsUp, MessageSquare,
-  Star, TrendingUp, Tag, Mic, Gauge, ArrowRight, Clock,
+  Star, TrendingUp, Tag, Mic, Gauge, ArrowRight, Clock, RefreshCw,
 } from 'lucide-react';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -70,7 +70,15 @@ function MiniBar({ value, max, colorClass }) {
 
 // ── main ──────────────────────────────────────────────────────────────────────
 
-export default function Overview({ episodes, channels, onNavigate }) {
+export default function Overview({ episodes, channels, onNavigate, onRefresh }) {
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState(null);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try { await onRefresh?.(); setLastRefreshed(new Date()); } catch {}
+    finally { setRefreshing(false); }
+  };
   const stats = useMemo(() => {
     // Primary channel only — exclude compare-only channels
     const primary = channels.find(c => c.isPrimary) || channels.find(c => !c.compareOnly) || channels[0] || null;
@@ -154,6 +162,26 @@ export default function Overview({ episodes, channels, onNavigate }) {
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-5xl mx-auto px-6 py-6 space-y-8">
+
+        {/* ── Header row ─────────────────────────────────────────── */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-th-tx1 font-semibold text-lg">Dashboard</h1>
+            {lastRefreshed && (
+              <p className="text-th-tx4 text-xs mt-0.5">
+                Updated {lastRefreshed.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-th-border text-th-tx3 hover:text-th-tx1 hover:border-th-accent/40 text-xs font-medium transition-colors disabled:opacity-40"
+          >
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+            {refreshing ? 'Refreshing…' : 'Refresh'}
+          </button>
+        </div>
 
         {/* ── Top stats ──────────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

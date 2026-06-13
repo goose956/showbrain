@@ -174,7 +174,14 @@ export default function App() {
 
   const renderPage = () => {
     switch (page) {
-      case 'overview':     return <Overview episodes={episodes} channels={channels} onNavigate={handlePageChange} />;
+      case 'overview':     return <Overview episodes={episodes} channels={channels} onNavigate={handlePageChange} onRefresh={() =>
+        Promise.all([apiFetch('/api/episodes'), apiFetch('/api/channels')])
+          .then(([epRes, chRes]) => Promise.all([epRes.json(), chRes.json()]))
+          .then(([eps, chs]) => {
+            setEpisodes(eps);
+            setChannels(chs.map(ch => ({ ...ch, transcribedCount: eps.filter(e => e.channelId === ch.id && e.transcript).length })));
+          }).catch(() => {})
+      } />;
       case 'channel':      return <Channel onEpisodesLoaded={setEpisodes} onChannelsLoaded={setChannels} syncStatus={syncStatus} onSyncStart={handleSyncStart} />;
       case 'dashboard':    return <Dashboard episodes={episodes} channels={channels} syncStatus={syncStatus} onSyncStart={handleSyncStart} onEpisodesUpdate={setEpisodes} />;
       case 'search':       return <SemanticSearch episodes={episodes} />;
