@@ -126,7 +126,7 @@ const COLUMNS = [
 
 const FILTER_DIMS = ['format', 'hookType', 'contentType', 'emotionalTone'];
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 12;
 
 export default function Intelligence({ episodes, onEpisodesUpdate }) {
   const [sortCol, setSortCol] = useState('viewCount');
