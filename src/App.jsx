@@ -191,7 +191,7 @@ export default function App() {
       case 'waitlist':     return <Waitlist />;
       case 'publish':      return <Publish episodes={episodes} />;
       case 'admin':        return <Admin currentUser={currentUser.username} onNavigate={handlePageChange} />;
-      default:             return <Dashboard episodes={episodes} />;
+      default:             return <Dashboard episodes={episodes} channels={channels} />;
     }
   };
 
