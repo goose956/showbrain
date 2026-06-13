@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Loader2, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Youtube, Users, Eye, Calendar, TrendingUp, BarChart2, Clock } from 'lucide-react';
+import { Loader2, Sparkles, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink, Users, Eye, TrendingUp, BarChart2, Clock } from 'lucide-react';
 import { generateShowNotes, generateChapterMarkers } from '../lib/claude';
 import { ErrorToast } from '../components/Dialog';
 
@@ -153,7 +153,7 @@ export default function Dashboard({ episodes, channels = [] }) {
             rel="noreferrer"
             className="ml-auto text-th-tx4 hover:text-red-400 transition-colors"
           >
-            <Youtube size={16} />
+            <ExternalLink size={16} />
           </a>
         </div>
 
