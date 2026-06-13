@@ -22,6 +22,7 @@ import Register from './pages/Register';
 import Settings from './pages/Settings';
 import { getStoredUser, storeAuth, clearAuth, verifyStoredToken, apiFetch } from './lib/api';
 import SupportButton from './components/SupportButton';
+import WelcomeModal from './components/WelcomeModal';
 
 const EMPTY_SYNC = {
   running: false, channelId: null, channelName: null,
@@ -40,6 +41,7 @@ export default function App() {
   const [authScreen, setAuthScreen] = useState('home');
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   // ── Global sync state (persists across page changes) ─────────────────────
   const [syncStatus, setSyncStatus] = useState(EMPTY_SYNC);
@@ -127,7 +129,12 @@ export default function App() {
   const handleAuth = (data) => {
     storeAuth(data);
     setCurrentUser({ username: data.username, isAdmin: data.isAdmin });
-    setPage('channel');
+    const seenKey = `showbrain_welcomed_${data.username}`;
+    if (!localStorage.getItem(seenKey)) {
+      localStorage.setItem(seenKey, '1');
+      setShowWelcome(true);
+    }
+    setPage('overview');
   };
 
   const handleLogout = () => {
@@ -253,6 +260,13 @@ export default function App() {
         </div>
       </div>
       {!currentUser.isAdmin && <SupportButton currentUser={currentUser.username} />}
+      {showWelcome && (
+        <WelcomeModal
+          username={currentUser.username}
+          onClose={() => setShowWelcome(false)}
+          onNavigate={handlePageChange}
+        />
+      )}
     </>
   );
 }
