@@ -81,10 +81,50 @@ export default function Performance({ episodes, channels = [] }) {
     sentimentCounts[ep.sentiment] = (sentimentCounts[ep.sentiment] || 0) + 1;
   });
 
+  const chartEps = [...eps]
+    .filter(ep => ep.viewCount > 0)
+    .sort((a, b) => new Date(a.publishedAt) - new Date(b.publishedAt));
+  const maxViews = Math.max(...chartEps.map(ep => ep.viewCount), 1);
+
   return (
     <div className="p-6 overflow-y-auto">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-th-tx1 text-2xl font-semibold mb-6">Performance</h1>
+
+        {chartEps.length > 0 && (
+          <div className="bg-th-surface border border-th-border rounded-xl p-5 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart2 size={15} className="text-th-accent" />
+              <h2 className="text-th-tx1 text-sm font-semibold">Views by Episode</h2>
+              <span className="text-th-tx4 text-xs ml-auto">{chartEps.length} episodes</span>
+            </div>
+            <div className="flex items-end gap-px h-32 overflow-x-auto pb-1">
+              {chartEps.map((ep) => {
+                const pct = (ep.viewCount / maxViews) * 100;
+                return (
+                  <div key={ep.id} className="group relative flex-shrink-0 flex flex-col items-center justify-end h-full" style={{ minWidth: Math.max(4, Math.floor(320 / chartEps.length)) + 'px' }}>
+                    <div
+                      className="w-full bg-th-accent/70 hover:bg-th-accent rounded-sm transition-colors cursor-default"
+                      style={{ height: `${pct}%` }}
+                    />
+                    {/* tooltip */}
+                    <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center z-10 pointer-events-none">
+                      <div className="bg-th-raised border border-th-border rounded-lg px-2.5 py-1.5 text-center whitespace-nowrap shadow-lg">
+                        <p className="text-th-tx1 text-xs font-medium">{formatNumber(ep.viewCount)} views</p>
+                        <p className="text-th-tx4 text-[10px] max-w-[160px] truncate">{ep.title}</p>
+                      </div>
+                      <div className="w-1.5 h-1.5 bg-th-raised border-r border-b border-th-border rotate-45 -mt-1" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-th-tx4 text-[10px]">Oldest</span>
+              <span className="text-th-tx4 text-[10px]">Newest</span>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatCard label="Total Views"    value={formatNumber(totalListens)}  icon={Headphones} color="accent" />
