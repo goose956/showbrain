@@ -164,6 +164,20 @@ export async function initSchema() {
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS api_errors (
+      id          TEXT PRIMARY KEY,
+      user_id     TEXT REFERENCES members(id) ON DELETE SET NULL,
+      username    TEXT,
+      path        TEXT NOT NULL,
+      method      TEXT NOT NULL,
+      status      INT NOT NULL,
+      error_msg   TEXT,
+      ip          TEXT,
+      occurred_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS api_errors_occurred_at ON api_errors (occurred_at DESC);
   `);
   console.log('[db] Schema ready');
 }

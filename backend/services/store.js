@@ -501,3 +501,21 @@ export async function setAdminSetting(key, value) {
 export async function deleteAdminSetting(key) {
   await query('DELETE FROM admin_settings WHERE key = $1', [key]);
 }
+
+// ── api errors ────────────────────────────────────────────────────────────────
+
+export async function logApiError({ id, userId, username, path, method, status, errorMsg, ip }) {
+  await query(
+    `INSERT INTO api_errors (id, user_id, username, path, method, status, error_msg, ip)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [id, userId || null, username || null, path, method, status, errorMsg || null, ip || null]
+  );
+}
+
+export async function getApiErrors(limit = 100) {
+  const { rows } = await query(
+    `SELECT * FROM api_errors ORDER BY occurred_at DESC LIMIT $1`,
+    [limit]
+  );
+  return rows;
+}

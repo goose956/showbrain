@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import {
   getPageViewStats, getRecentPageViews,
   getTickets, getTicket, replyTicket, updateTicketStatus, createTicket,
-  getMembers, getAdminSettings, setAdminSetting, deleteAdminSetting,
+  getMembers, getAdminSettings, setAdminSetting, deleteAdminSetting, getApiErrors,
 } from '../services/store.js';
 import { query } from '../services/db.js';
 
@@ -21,12 +21,13 @@ export const adminRouter = Router();
 
 adminRouter.get('/stats', async (req, res) => {
   try {
-    const [stats, recent, members] = await Promise.all([
+    const [stats, recent, members, errors] = await Promise.all([
       getPageViewStats(),
       getRecentPageViews(200),
       getMembers(),
+      getApiErrors(200),
     ]);
-    res.json({ stats, recent, memberCount: members.length });
+    res.json({ stats, recent, memberCount: members.length, errors });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

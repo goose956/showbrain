@@ -148,6 +148,7 @@ function AnalyticsTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showRecent, setShowRecent] = useState(false);
+  const [showErrors, setShowErrors] = useState(true);
 
   const load = async () => {
     setLoading(true); setError('');
@@ -165,7 +166,7 @@ function AnalyticsTab() {
   if (error) return <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-300 text-xs"><AlertCircle size={13} />{error}</div>;
   if (!data) return null;
 
-  const { stats, recent, memberCount } = data;
+  const { stats, recent, memberCount, errors = [] } = data;
   const s = stats.summary;
 
   // Build last-30-day sparkline data
@@ -240,6 +241,43 @@ function AnalyticsTab() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* API Errors */}
+      <div className="bg-th-surface border border-th-border rounded-xl overflow-hidden">
+        <button
+          onClick={() => setShowErrors(v => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 text-th-tx2 text-xs font-medium hover:bg-th-raised transition-colors"
+        >
+          <span className="flex items-center gap-1.5">
+            <AlertCircle size={12} className="text-red-400" />
+            API errors
+            {errors.length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-medium">{errors.length}</span>
+            )}
+          </span>
+          {showErrors ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+        </button>
+        {showErrors && (
+          errors.length === 0
+            ? <p className="px-4 py-3 text-th-tx4 text-xs">No errors recorded yet.</p>
+            : <div className="divide-y divide-th-border max-h-72 overflow-y-auto">
+                {errors.map(e => (
+                  <div key={e.id} className="flex items-center gap-3 px-4 py-2">
+                    <span className={`text-[10px] font-mono font-bold w-8 shrink-0 ${e.status >= 500 ? 'text-red-400' : 'text-amber-400'}`}>
+                      {e.status}
+                    </span>
+                    <span className={`text-[10px] font-mono font-bold w-10 shrink-0 ${e.method === 'GET' ? 'text-emerald-400' : e.method === 'POST' ? 'text-sky-400' : 'text-amber-400'}`}>
+                      {e.method}
+                    </span>
+                    <span className="text-th-tx3 text-[11px] font-mono truncate flex-1">{e.path}</span>
+                    {e.error_msg && <span className="text-red-400 text-[10px] truncate max-w-[160px] shrink-0">{e.error_msg}</span>}
+                    <span className="text-th-tx4 text-[11px] shrink-0">{e.username || 'anon'}</span>
+                    <span className="text-th-tx4 text-[10px] shrink-0">{timeAgo(e.occurred_at)}</span>
+                  </div>
+                ))}
+              </div>
+        )}
       </div>
 
       {/* Recent activity log */}

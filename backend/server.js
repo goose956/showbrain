@@ -10,7 +10,7 @@ import { initSchema } from './services/db.js';
 import { resolveChannelId, getChannelInfo, getChannelVideosPage, getAllChannelVideos, getVideoDurations } from './services/youtube.js';
 import { analyseTitlesBatch } from './services/analyse.js';
 import { syncChannel, getSyncState, processVideo, analyseTopVideos, getTopAnalysisState } from './services/sync.js';
-import { getChannels, getChannel, upsertChannel, deleteChannel, getEpisodes, getEpisodeByVideoId, getClicks, logClick, addWaitlistEmail, upsertEpisode, getMembers, getMemberById, getMemberByUsername, createMember, deleteMember, getUserSettings, setUserSettings, getPosts, savePost, updatePostStatus, deletePost, getIdeas, saveIdeas, deleteIdeas, getScripts, saveScript, deleteScript, logPageView } from './services/store.js';
+import { getChannels, getChannel, upsertChannel, deleteChannel, getEpisodes, getEpisodeByVideoId, getClicks, logClick, addWaitlistEmail, upsertEpisode, getMembers, getMemberById, getMemberByUsername, createMember, deleteMember, getUserSettings, setUserSettings, getPosts, savePost, updatePostStatus, deletePost, getIdeas, saveIdeas, deleteIdeas, getScripts, saveScript, deleteScript, logPageView, logApiError } from './services/store.js';
 import { generatePosts } from './services/analyse.js';
 import { hashPassword, verifyPassword, createToken, verifyToken } from './services/auth.js';
 import aiRoutes from './routes/ai.js';
@@ -131,7 +131,7 @@ app.delete('/api/admin/members/:id', requireAdmin, async (req, res) => {
 app.use('/api', requireAuth);
 
 // Track every authenticated API request
-app.use('/api', (req, _res, next) => {
+app.use('/api', (req, res, next) => {
   const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
   logPageView({
     id: randomUUID(),
@@ -143,6 +143,23 @@ app.use('/api', (req, _res, next) => {
     userAgent: req.headers['user-agent'] || '',
     referrer: req.headers['referer'] || '',
   }).catch(() => {});
+
+  // Log errors after response
+  res.on('finish', () => {
+    if (res.statusCode >= 400) {
+      logApiError({
+        id: randomUUID(),
+        userId: req.userId,
+        username: req.username,
+        path: req.path,
+        method: req.method,
+        status: res.statusCode,
+        errorMsg: res.locals.errorMsg || null,
+        ip,
+      }).catch(() => {});
+    }
+  });
+
   next();
 });
 
