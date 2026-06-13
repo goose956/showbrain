@@ -14,6 +14,7 @@ import Ideas from './pages/Ideas';
 import Compare from './pages/Compare';
 import Analytics from './pages/Analytics';
 import Trending from './pages/Trending';
+import Help from './pages/Help';
 import Waitlist from './pages/Waitlist';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
@@ -220,6 +221,7 @@ export default function App() {
       case 'analytics':    return <Analytics />;
       case 'waitlist':     return <Waitlist />;
       case 'publish':      return <Publish episodes={episodes} />;
+      case 'help':         return <Help />;
       case 'admin':        return <Admin currentUser={currentUser.username} onNavigate={handlePageChange} />;
       default:             return <Dashboard episodes={episodes} channels={channels} syncStatus={syncStatus} onSyncStart={handleSyncStart} onEpisodesUpdate={setEpisodes} />;
     }
