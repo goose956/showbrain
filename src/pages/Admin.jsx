@@ -485,7 +485,7 @@ function ApiKeysTab() {
       const updates = Object.fromEntries(
         Object.entries(edits).filter(([, v]) => v !== '')
       );
-      await apiFetch('/api/admin/api-keys', { method: 'PUT', body: JSON.stringify(updates) });
+      await apiFetch('/api/admin/api-keys', { method: 'PUT', body: JSON.stringify(updates), headers: { 'Content-Type': 'application/json' } });
       // Reload to show updated masked values
       const data = await apiFetch('/api/admin/api-keys').then(r => r.json());
       setKeys(data);
