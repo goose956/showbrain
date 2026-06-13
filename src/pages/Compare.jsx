@@ -360,10 +360,19 @@ function AddChannelForm({ onAdded, onCancel }) {
 // ── growth score ranking ──────────────────────────────────────────────────────
 
 const SCORE_FACTORS = [
-  { key: 'momentum',    label: 'Momentum',    weight: 0.40, color: '#34d399' },
-  { key: 'avgViews',    label: 'Avg Views',   weight: 0.35, color: '#38bdf8' },
+  { key: 'avgViews',    label: 'Avg Views',   weight: 0.50, color: '#38bdf8' },
+  { key: 'momentum',    label: 'Momentum',    weight: 0.25, color: '#34d399' },
   { key: 'engagement',  label: 'Engagement',  weight: 0.15, color: '#f472b6' },
   { key: 'consistency', label: 'Consistency', weight: 0.10, color: '#fbbf24' },
+];
+
+// Standout badges awarded for being best-in-class on a single factor
+// (only shown if the channel is NOT already ranked #1 overall)
+const STANDOUT_BADGES = [
+  { key: 'momentum',    label: '🚀 Fastest Growing',    title: 'Highest momentum — views trending up fastest' },
+  { key: 'engagement',  label: '💬 Most Engaging',       title: 'Highest engagement rate (likes + comments / views)' },
+  { key: 'consistency', label: '📅 Most Consistent',     title: 'Highest posting frequency' },
+  { key: 'avgViews',    label: '👁 Most Watched',         title: 'Highest average views per video' },
 ];
 
 function buildGrowthScores(channelStats) {
@@ -375,16 +384,16 @@ function buildGrowthScores(channelStats) {
     consistency: ch.ppm || null,
   }));
 
-  // Ratio normalise: score = value / max across channels × 100
-  // This means the best channel scores 100 on a factor, others score proportionally
-  // (avoids the min-max problem where the loser always gets 0)
+  // avgViews uses sqrt normalization: compresses extreme size differences while
+  // still rewarding higher absolute views (ratio alone would penalise big channels too little)
+  // All other factors use plain ratio normalization (value / max)
   const maxByFactor = {};
   for (const { key } of SCORE_FACTORS) {
     const vals = raw.map(r => r[key]).filter(v => v !== null && isFinite(v) && v > 0);
     maxByFactor[key] = vals.length ? Math.max(...vals) : null;
   }
 
-  return channelStats.map((ch, i) => {
+  const scored = channelStats.map((ch, i) => {
     const r = raw[i];
     const breakdown = {};
     let totalScore = 0;
@@ -393,8 +402,13 @@ function buildGrowthScores(channelStats) {
     for (const { key, weight } of SCORE_FACTORS) {
       const v = r[key];
       const maxV = maxByFactor[key];
-      const hasData = v !== null && isFinite(v) && maxV !== null;
-      const norm = hasData ? Math.min(v / maxV, 1) : null;
+      const hasData = v !== null && isFinite(v) && maxV !== null && v > 0;
+      let norm = null;
+      if (hasData) {
+        norm = key === 'avgViews'
+          ? Math.min(Math.sqrt(v) / Math.sqrt(maxV), 1)
+          : Math.min(v / maxV, 1);
+      }
       breakdown[key] = norm !== null ? Math.round(norm * 100) : null;
       if (norm !== null) {
         totalScore += norm * weight;
@@ -403,8 +417,26 @@ function buildGrowthScores(channelStats) {
     }
 
     const score = totalWeight > 0 ? Math.round((totalScore / totalWeight) * 100) : 0;
-    return { ...ch, score, breakdown };
+    return { ...ch, score, breakdown, raw: r };
   }).sort((a, b) => b.score - a.score);
+
+  // Assign standout badges: best on a single factor, but not already #1 overall
+  const winner = scored[0];
+  scored.forEach(ch => { ch.badges = []; });
+  for (const { key, label, title } of STANDOUT_BADGES) {
+    const best = [...scored].filter(c => c.raw[key] !== null).sort((a, b) => b.raw[key] - a.raw[key])[0];
+    if (best && best.channelId !== winner.channelId) {
+      // Only award if clearly better — at least 10% higher raw value than #2
+      const second = [...scored].filter(c => c.channelId !== best.channelId && c.raw[key] !== null)
+        .sort((a, b) => b.raw[key] - a.raw[key])[0];
+      const clearlyBest = !second || (best.raw[key] / second.raw[key]) > 1.10;
+      if (clearlyBest) {
+        scored.find(c => c.channelId === best.channelId).badges.push({ label, title });
+      }
+    }
+  }
+
+  return scored;
 }
 
 const RANK_MEDALS = ['🥇', '🥈', '🥉'];
@@ -436,17 +468,28 @@ function GrowthScorePanel({ channelStats }) {
                 }
               </div>
 
-              {/* Name */}
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${pal.bar}`} />
-                <span className="text-th-tx1 text-sm font-medium truncate">{ch.name}</span>
-                {ch.isPrimary && (
-                  <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0">You</span>
-                )}
-                {ch.episodeCount < 20 && (
-                  <span className="text-[10px] font-medium bg-orange-500/15 text-orange-300 border border-orange-500/25 px-1.5 py-0.5 rounded-full shrink-0" title="Fewer than 20 videos — score may not be reliable">
-                    ⚠ Low data
-                  </span>
+              {/* Name + badges */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${pal.bar}`} />
+                  <span className="text-th-tx1 text-sm font-medium truncate">{ch.name}</span>
+                  {ch.isPrimary && (
+                    <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0">You</span>
+                  )}
+                  {ch.episodeCount < 20 && (
+                    <span className="text-[10px] font-medium bg-orange-500/15 text-orange-300 border border-orange-500/25 px-1.5 py-0.5 rounded-full shrink-0" title="Fewer than 20 videos — score may not be reliable">
+                      ⚠ Low data
+                    </span>
+                  )}
+                </div>
+                {ch.badges?.length > 0 && (
+                  <div className="flex gap-1.5 mt-1.5 ml-4 flex-wrap">
+                    {ch.badges.map(b => (
+                      <span key={b.label} title={b.title} className="text-[10px] font-medium bg-th-raised border border-th-border text-th-tx2 px-2 py-0.5 rounded-full">
+                        {b.label}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
 
@@ -490,7 +533,7 @@ function GrowthScorePanel({ channelStats }) {
 
       <div className="px-5 py-3 border-t border-th-border/60 bg-th-raised/20">
         <p className="text-th-tx4 text-[11px]">
-          Score weights: Momentum 40% · Views/Sub 30% · Engagement 20% · Posting Consistency 10%. All channels scored relative to each other.
+          Score weights: Avg Views 50% (sqrt scale) · Momentum 25% · Engagement 15% · Consistency 10%. Badges highlight channels that lead on a single factor.
         </p>
       </div>
     </div>
