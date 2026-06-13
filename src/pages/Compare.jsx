@@ -360,33 +360,39 @@ function AddChannelForm({ onAdded, onCancel }) {
 // ── growth score ranking ──────────────────────────────────────────────────────
 
 const SCORE_FACTORS = [
-  { key: 'avgViews',    label: 'Avg Views',   weight: 0.50, color: '#38bdf8' },
-  { key: 'momentum',    label: 'Momentum',    weight: 0.25, color: '#34d399' },
-  { key: 'engagement',  label: 'Engagement',  weight: 0.15, color: '#f472b6' },
-  { key: 'consistency', label: 'Consistency', weight: 0.10, color: '#fbbf24' },
+  { key: 'avgViews',  label: 'Avg Views',  weight: 0.40, color: '#38bdf8' },
+  { key: 'subVel',    label: 'Sub Growth', weight: 0.25, color: '#a78bfa' },
+  { key: 'momentum',  label: 'Momentum',   weight: 0.20, color: '#34d399' },
+  { key: 'engagement',label: 'Engagement', weight: 0.15, color: '#f472b6' },
 ];
 
 // Standout badges awarded for being best-in-class on a single factor
 // (only shown if the channel is NOT already ranked #1 overall)
 const STANDOUT_BADGES = [
-  { key: 'momentum',    label: '🚀 Fastest Growing',    title: 'Highest momentum — views trending up fastest' },
-  { key: 'engagement',  label: '💬 Most Engaging',       title: 'Highest engagement rate (likes + comments / views)' },
-  { key: 'consistency', label: '📅 Most Consistent',     title: 'Highest posting frequency' },
-  { key: 'avgViews',    label: '👁 Most Watched',         title: 'Highest average views per video' },
+  { key: 'subVel',    label: '📈 Fastest Growing',  title: 'Highest subscriber growth rate — subs gained per year' },
+  { key: 'momentum',  label: '🚀 Best Momentum',    title: 'Views trending up fastest relative to their own recent history' },
+  { key: 'engagement',label: '💬 Most Engaging',    title: 'Highest engagement rate (likes + comments / views)' },
+  { key: 'avgViews',  label: '👁 Most Watched',      title: 'Highest average views per video' },
 ];
 
 function buildGrowthScores(channelStats) {
-  const raw = channelStats.map(ch => ({
-    channelId: ch.channelId,
-    momentum:    ch.growthPct !== null ? Math.max(0, ch.growthPct + 100) : null,
-    avgViews:    ch.avgViews || null,
-    engagement:  ch.engagementRate || null,
-    consistency: ch.ppm || null,
-  }));
+  const raw = channelStats.map(ch => {
+    const ageYears = ch.channelCreatedAt
+      ? (Date.now() - new Date(ch.channelCreatedAt)) / (1000 * 60 * 60 * 24 * 365.25)
+      : null;
+    return {
+      channelId: ch.channelId,
+      avgViews:  ch.avgViews || null,
+      subVel:    ageYears && ageYears > 0 && ch.subscriberCount > 0
+                   ? ch.subscriberCount / ageYears
+                   : null,
+      momentum:  ch.growthPct !== null ? Math.max(0, ch.growthPct + 100) : null,
+      engagement: ch.engagementRate || null,
+    };
+  });
 
-  // avgViews uses sqrt normalization: compresses extreme size differences while
-  // still rewarding higher absolute views (ratio alone would penalise big channels too little)
-  // All other factors use plain ratio normalization (value / max)
+  // avgViews and subVel use sqrt normalization to compress extreme size differences
+  // while still rewarding higher absolute values. Other factors use plain ratio.
   const maxByFactor = {};
   for (const { key } of SCORE_FACTORS) {
     const vals = raw.map(r => r[key]).filter(v => v !== null && isFinite(v) && v > 0);
@@ -405,7 +411,7 @@ function buildGrowthScores(channelStats) {
       const hasData = v !== null && isFinite(v) && maxV !== null && v > 0;
       let norm = null;
       if (hasData) {
-        norm = key === 'avgViews'
+        norm = (key === 'avgViews' || key === 'subVel')
           ? Math.min(Math.sqrt(v) / Math.sqrt(maxV), 1)
           : Math.min(v / maxV, 1);
       }
@@ -533,7 +539,7 @@ function GrowthScorePanel({ channelStats }) {
 
       <div className="px-5 py-3 border-t border-th-border/60 bg-th-raised/20">
         <p className="text-th-tx4 text-[11px]">
-          Score weights: Avg Views 50% (sqrt scale) · Momentum 25% · Engagement 15% · Consistency 10%. Badges highlight channels that lead on a single factor.
+          Score weights: Avg Views 40% · Sub Growth 25% · Momentum 20% · Engagement 15%. Sub growth = subscribers per year of channel age. Badges highlight channels leading on a single factor.
         </p>
       </div>
     </div>
