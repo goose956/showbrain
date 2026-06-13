@@ -89,7 +89,17 @@ export default function Performance({ episodes, channels = [] }) {
   return (
     <div className="p-6 overflow-y-auto">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-th-tx1 text-2xl font-semibold mb-6">Performance</h1>
+        <div className="flex items-center gap-3 mb-6">
+          <h1 className="text-th-tx1 text-2xl font-semibold">Performance</h1>
+          {primaryChannel && (
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-th-accent/10 border border-th-accent/20 text-th-accent text-xs font-medium">
+              {primaryChannel.thumbnail && (
+                <img src={primaryChannel.thumbnail} alt="" className="w-4 h-4 rounded-full object-cover" />
+              )}
+              {primaryChannel.name}
+            </span>
+          )}
+        </div>
 
         {chartEps.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
