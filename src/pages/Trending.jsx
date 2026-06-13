@@ -350,6 +350,17 @@ export default function Trending({ channels = [], onWriteScript }) {
           </div>
         )}
 
+        {/* Per-section errors from the backend (e.g. YouTube quota exceeded) */}
+        {data?.errors?.length > 0 && (
+          <div className="mb-5 space-y-2">
+            {data.errors.map((e, i) => (
+              <div key={i} className="flex items-start gap-2 text-amber-300 text-xs bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+                <AlertCircle size={13} className="shrink-0 mt-0.5" />{e}
+              </div>
+            ))}
+          </div>
+        )}
+
         {loading && !data && (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
             <Loader2 size={24} className="text-th-accent animate-spin" />
@@ -410,15 +421,6 @@ export default function Trending({ channels = [], onWriteScript }) {
               </div>
             )}
 
-            {data.errors?.length > 0 && (
-              <div className="space-y-1">
-                {data.errors.map((e, i) => (
-                  <p key={i} className="text-th-tx4 text-[11px] flex items-center gap-1.5">
-                    <AlertCircle size={10} className="text-amber-400" /> {e}
-                  </p>
-                ))}
-              </div>
-            )}
           </div>
         )}
       </div>
