@@ -77,6 +77,7 @@ export default function Performance({ episodes, channels = [] }) {
 
   const sentimentCounts = {};
   eps.forEach((ep) => {
+    if (!ep.sentiment) return;
     sentimentCounts[ep.sentiment] = (sentimentCounts[ep.sentiment] || 0) + 1;
   });
 
