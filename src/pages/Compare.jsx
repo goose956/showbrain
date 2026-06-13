@@ -316,126 +316,138 @@ function AddChannelForm({ onAdded, onCancel }) {
   );
 }
 
-// ── per-channel growth chart ──────────────────────────────────────────────────
+// ── growth score ranking ──────────────────────────────────────────────────────
 
-const CHART_COLORS = ['#8b5cf6', '#38bdf8', '#34d399', '#fbbf24', '#f472b6'];
+const SCORE_FACTORS = [
+  { key: 'momentum',    label: 'Momentum',    weight: 0.40, color: '#34d399' },
+  { key: 'viewsPerSub', label: 'Views/Sub',   weight: 0.30, color: '#38bdf8' },
+  { key: 'engagement',  label: 'Engagement',  weight: 0.20, color: '#f472b6' },
+  { key: 'consistency', label: 'Consistency', weight: 0.10, color: '#fbbf24' },
+];
 
-function ChannelGrowthChart({ ch, sharedMaxViews }) {
-  const W = 320, H = 120, PAD = { top: 8, right: 12, bottom: 28, left: 44 };
-  const innerW = W - PAD.left - PAD.right;
-  const innerH = H - PAD.top - PAD.bottom;
-  const color = CHART_COLORS[ch.paletteIdx] || CHART_COLORS[0];
-
-  const launchMs = ch.channelCreatedAt ? new Date(ch.channelCreatedAt).getTime() : null;
-
-  const pts = [...ch.episodes]
-    .filter(e => e.publishedAt && e.viewCount > 0)
-    .sort((a, b) => new Date(a.publishedAt) - new Date(b.publishedAt));
-
-  if (pts.length < 3) return (
-    <div className="flex items-center justify-center h-20 text-th-tx4 text-xs">Not enough data</div>
-  );
-
-  const firstMs = launchMs || new Date(pts[0].publishedAt).getTime();
-  const smoothed = pts.map((p, i) => {
-    const win = pts.slice(Math.max(0, i - 2), i + 3);
-    const avgV = win.reduce((s, w) => s + w.viewCount, 0) / win.length;
-    const monthsSinceLaunch = (new Date(p.publishedAt).getTime() - firstMs) / (1000 * 60 * 60 * 24 * 30.4);
-    return { months: Math.max(0, monthsSinceLaunch), views: avgV };
-  });
-
-  const maxMonths = smoothed[smoothed.length - 1].months || 1;
-  // Use shared Y scale so channels are visually comparable
-  const maxViews = sharedMaxViews || Math.max(...smoothed.map(p => p.views));
-
-  const x = (m) => (m / maxMonths) * innerW;
-  const y = (v) => innerH - Math.min(v / maxViews, 1) * innerH;
-
-  function fmtV(n) {
-    if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-    if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
-    return Math.round(n);
-  }
-
-  const yTicks = [0, 0.5, 1].map(t => ({ v: maxViews * t, y: innerH - t * innerH }));
-  const xTicks = [0, 0.5, 1].map(t => ({ m: maxMonths * t, x: t * innerW }));
-
-  const d = smoothed.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.months).toFixed(1)},${y(p.views).toFixed(1)}`).join(' ');
-  const area = `${d} L${x(smoothed[smoothed.length - 1].months).toFixed(1)},${innerH} L${x(0)},${innerH} Z`;
-  const gradId = `grad-${ch.channelId.replace(/[^a-z0-9]/gi, '')}`;
-
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
-        </linearGradient>
-      </defs>
-      <g transform={`translate(${PAD.left},${PAD.top})`}>
-        {yTicks.map((t, i) => (
-          <g key={i}>
-            <line x1={0} y1={t.y} x2={innerW} y2={t.y} stroke="currentColor" strokeOpacity={0.06} strokeWidth={1} />
-            <text x={-6} y={t.y + 3} textAnchor="end" fontSize={9} fill="currentColor" fillOpacity={0.35}>{fmtV(t.v)}</text>
-          </g>
-        ))}
-        {xTicks.map((t, i) => (
-          <text key={i} x={t.x} y={innerH + 16} textAnchor="middle" fontSize={9} fill="currentColor" fillOpacity={0.35}>
-            {Math.round(t.m)}mo
-          </text>
-        ))}
-        <path d={area} fill={`url(#${gradId})`} />
-        <path d={d} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
-      </g>
-    </svg>
-  );
-}
-
-function GrowthChartGrid({ channelStats }) {
-  const eligible = channelStats.filter(ch =>
-    ch.episodes.filter(e => e.viewCount > 0 && e.publishedAt).length >= 3
-  );
-  if (!eligible.length) return null;
-
-  // Compute shared Y axis max across all channels so scales are comparable
-  const sharedMaxViews = Math.max(...eligible.map(ch => {
-    const pts = ch.episodes.filter(e => e.viewCount > 0 && e.publishedAt)
-      .sort((a, b) => new Date(a.publishedAt) - new Date(b.publishedAt));
-    const smoothed = pts.map((p, i) => {
-      const win = pts.slice(Math.max(0, i - 2), i + 3);
-      return win.reduce((s, w) => s + w.viewCount, 0) / win.length;
-    });
-    return Math.max(...smoothed);
+function buildGrowthScores(channelStats) {
+  // Raw values per channel per factor
+  const raw = channelStats.map(ch => ({
+    channelId: ch.channelId,
+    momentum:    ch.growthPct !== null ? Math.max(0, ch.growthPct + 100) : null, // shift so 0% growth = 100
+    viewsPerSub: ch.viewsPerSub,
+    engagement:  ch.engagementRate,
+    consistency: ch.ppm,
   }));
 
+  // Normalise each factor 0–1 across all channels (min-max)
+  const normalised = SCORE_FACTORS.map(({ key }) => {
+    const vals = raw.map(r => r[key]).filter(v => v !== null && v !== undefined && isFinite(v));
+    if (!vals.length) return { key, min: 0, max: 1 };
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
+    return { key, min, max: max === min ? max + 1 : max };
+  });
+
+  return channelStats.map((ch, i) => {
+    const r = raw[i];
+    let totalScore = 0;
+    const breakdown = {};
+
+    for (const { key, weight } of SCORE_FACTORS) {
+      const { min, max } = normalised.find(n => n.key === key);
+      const v = r[key];
+      const norm = (v !== null && v !== undefined && isFinite(v))
+        ? (v - min) / (max - min)
+        : 0;
+      breakdown[key] = Math.round(norm * 100);
+      totalScore += norm * weight;
+    }
+
+    return {
+      ...ch,
+      score: Math.round(totalScore * 100),
+      breakdown,
+    };
+  }).sort((a, b) => b.score - a.score);
+}
+
+const RANK_MEDALS = ['🥇', '🥈', '🥉'];
+
+function GrowthScorePanel({ channelStats }) {
+  if (channelStats.length < 2) return null;
+  const scored = buildGrowthScores(channelStats);
+  const topScore = scored[0].score || 1;
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      {eligible.map(ch => {
+    <div className="bg-th-surface border border-th-border rounded-xl overflow-hidden">
+      {scored.map((ch, rank) => {
         const pal = CHANNEL_PALETTE[ch.paletteIdx];
-        const growthLabel = ch.growthPct !== null
-          ? `${ch.growthPct >= 0 ? '+' : ''}${ch.growthPct.toFixed(0)}% momentum`
-          : null;
+        const barW = (ch.score / 100) * 100;
+        const isFirst = rank === 0;
+
         return (
-          <div key={ch.channelId} className="bg-th-surface border border-th-border rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className={`w-2 h-2 rounded-full shrink-0 ${pal.bar}`} />
-                <span className="text-th-tx1 text-xs font-medium truncate">{ch.name}</span>
+          <div
+            key={ch.channelId}
+            className={`px-5 py-4 ${rank < scored.length - 1 ? 'border-b border-th-border/60' : ''} ${isFirst ? 'bg-th-raised/40' : ''}`}
+          >
+            {/* Row: rank + name + score */}
+            <div className="flex items-center gap-3 mb-3">
+              {/* Rank */}
+              <div className="w-8 shrink-0 text-center">
+                {rank < 3
+                  ? <span className="text-base leading-none">{RANK_MEDALS[rank]}</span>
+                  : <span className="text-th-tx4 text-sm font-bold">#{rank + 1}</span>
+                }
+              </div>
+
+              {/* Name */}
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${pal.bar}`} />
+                <span className="text-th-tx1 text-sm font-medium truncate">{ch.name}</span>
                 {ch.isPrimary && (
                   <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0">You</span>
                 )}
               </div>
-              {growthLabel && (
-                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${ch.growthPct >= 0 ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'}`}>
-                  {growthLabel}
-                </span>
-              )}
+
+              {/* Score */}
+              <div className="shrink-0 text-right">
+                <span className={`text-2xl font-bold tabular-nums ${isFirst ? pal.text : 'text-th-tx1'}`}>{ch.score}</span>
+                <span className="text-th-tx4 text-xs ml-0.5">/100</span>
+              </div>
             </div>
-            <ChannelGrowthChart ch={ch} sharedMaxViews={sharedMaxViews} />
-            <p className="text-th-tx4 text-[10px] mt-1">Months since launch · shared scale · rolling avg views</p>
+
+            {/* Main score bar */}
+            <div className="ml-11 mb-3">
+              <div className="h-2 bg-th-raised rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${pal.bar}`}
+                  style={{ width: `${barW}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Factor breakdown */}
+            <div className="ml-11 grid grid-cols-4 gap-2">
+              {SCORE_FACTORS.map(f => (
+                <div key={f.key}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-th-tx4 text-[10px]">{f.label}</span>
+                    <span className="text-th-tx3 text-[10px] tabular-nums">{ch.breakdown[f.key]}</span>
+                  </div>
+                  <div className="h-1 bg-th-raised rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${ch.breakdown[f.key]}%`, backgroundColor: f.color }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         );
       })}
+
+      <div className="px-5 py-3 border-t border-th-border/60 bg-th-raised/20">
+        <p className="text-th-tx4 text-[11px]">
+          Score weights: Momentum 40% · Views/Sub 30% · Engagement 20% · Posting Consistency 10%. All channels scored relative to each other.
+        </p>
+      </div>
     </div>
   );
 }
@@ -714,13 +726,11 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
           </div>
         </div>
 
-        {/* ── Growth charts ── */}
-        {channelStats.some(ch => ch.episodes.filter(e => e.viewCount > 0 && e.publishedAt).length >= 3) && (
-          <div className="px-6 pt-6 pb-2">
-            <p className="text-th-tx3 text-xs font-medium uppercase tracking-wider mb-3">Growth trajectory</p>
-            <GrowthChartGrid channelStats={channelStats} />
-          </div>
-        )}
+        {/* ── Growth score ranking ── */}
+        <div className="px-6 pt-6 pb-2">
+          <p className="text-th-tx3 text-xs font-medium uppercase tracking-wider mb-3">Growth score ranking</p>
+          <GrowthScorePanel channelStats={channelStats} />
+        </div>
 
         {/* ── Stats table ── */}
         <div className="px-6 pt-6 pb-2">
