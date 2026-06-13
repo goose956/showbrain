@@ -94,11 +94,12 @@ export default function SupportButton({ currentUser }) {
       {/* Floating button */}
       <button
         onClick={() => setOpen(v => !v)}
-        className={`fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-all ${
+        className={`fixed bottom-6 right-6 z-50 h-10 px-4 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium transition-all ${
           open ? 'bg-th-surface border-2 border-th-accent text-th-accent' : 'bg-th-accent hover:bg-th-accentH text-th-accentFg'
         }`}
       >
-        {open ? <X size={18} /> : <MessageCircle size={18} />}
+        {open ? <X size={15} /> : <MessageCircle size={15} />}
+        {!open && <span>Get support</span>}
       </button>
 
       {/* Panel */}
