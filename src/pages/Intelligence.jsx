@@ -128,7 +128,7 @@ const FILTER_DIMS = ['format', 'hookType', 'contentType', 'emotionalTone'];
 
 const PAGE_SIZE = 12;
 
-export default function Intelligence({ episodes, onEpisodesUpdate }) {
+export default function Intelligence({ episodes, channels: channelsProp = [], onEpisodesUpdate }) {
   const [sortCol, setSortCol] = useState('viewCount');
   const [sortDir, setSortDir] = useState('desc');
   const [filters, setFilters] = useState({});
@@ -144,19 +144,22 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
     fetchSavedInsights('channelInsights').then(saved => { if (saved) setInsights(saved); }).catch(() => {});
   }, []);
 
-  // Derive unique channels — primary (non-compare) first, then compare channels
+  // Primary channel = the one marked isPrimary, or first non-compare channel
+  const primaryChannel = channelsProp.find(c => c.isPrimary) || channelsProp.find(c => !c.compareOnly) || channelsProp[0];
+
+  // All channels that have episodes (for the tab bar)
   const channels = Array.from(
     new Map(episodes.map(e => [e.channelId, { id: e.channelId, name: e.channelName || e.channelId }])).values()
   );
 
-  // Auto-select the first channel once episodes load
+  // Auto-select the primary channel once data loads
   useEffect(() => {
-    if (!selectedChannel && channels.length > 0) {
-      setSelectedChannel(channels[0].id);
+    if (!selectedChannel && primaryChannel) {
+      setSelectedChannel(primaryChannel.id);
     }
-  }, [channels.length]);
+  }, [primaryChannel?.id]);
 
-  const activeChannel = selectedChannel || channels[0]?.id || null;
+  const activeChannel = selectedChannel || primaryChannel?.id || channels[0]?.id || null;
 
   // Channel-filtered episodes (everything else is derived from this)
   const channelEpisodes = activeChannel
@@ -261,12 +264,6 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h1 className="text-th-tx1 font-semibold text-lg">Episode Intelligence</h1>
-            <p className="text-th-tx3 text-xs mt-0.5">
-              Claude extracts every dimension from transcript — no manual tagging.
-              {activeChannel === channels[0]?.id && episodesWithDims.length < channelEpisodes.length && (
-                <span className="text-amber-400 ml-2">{channelEpisodes.length - episodesWithDims.length} not yet analysed.</span>
-              )}
-            </p>
           </div>
           {hasFilters && (
             <button onClick={clearFilters} className="text-xs text-th-tx3 hover:text-th-tx1 transition-colors">
