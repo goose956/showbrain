@@ -88,8 +88,8 @@ export async function generateOutlierAnalysis(onEvent) {
 }
 
 // ── Episode Ideas ─────────────────────────────────────────────────────────────
-export async function generateEpisodeIdeas(episodes) {
-  const { ideas } = await post('/api/ai/episode-ideas', { episodes });
+export async function generateEpisodeIdeas(episodes, competitorData = null) {
+  const { ideas } = await post('/api/ai/episode-ideas', { episodes, competitorData });
   return ideas;
 }
 

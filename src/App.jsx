@@ -183,7 +183,7 @@ export default function App() {
           setChannels(chs.map(ch => ({ ...ch, transcribedCount: episodes.filter(e => e.channelId === ch.id && e.transcript).length })))
         ).catch(() => {});
       }} />;
-      case 'ideas':        return <Ideas episodes={episodes} onWriteScript={handleWriteScript} ideas={episodeIdeas} onIdeasUpdate={setEpisodeIdeas} />;
+      case 'ideas':        return <Ideas episodes={episodes} channels={channels} onWriteScript={handleWriteScript} ideas={episodeIdeas} onIdeasUpdate={setEpisodeIdeas} />;
       case 'scriptwriter': return <ScriptWriter key={scriptBrief} episodes={episodes} initialBrief={scriptBrief} />;
       case 'queue':        return <PostQueue episodes={episodes} />;
       case 'settings':     return <Settings />;

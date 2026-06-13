@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Loader2, AlertCircle, RefreshCw, PenLine, TrendingUp, ArrowRight, Lightbulb, Trash2 } from 'lucide-react';
+import { Sparkles, Loader2, AlertCircle, RefreshCw, PenLine, TrendingUp, ArrowRight, Lightbulb, Trash2, Users } from 'lucide-react';
 import { generateEpisodeIdeas, fetchSavedIdeas, persistIdeas, clearIdeas } from '../lib/claude';
 
 const TYPE_META = {
@@ -92,12 +92,20 @@ function IdeaCard({ idea, onWriteScript }) {
   );
 }
 
-export default function Ideas({ episodes, onWriteScript }) {
+export default function Ideas({ episodes, channels = [], onWriteScript }) {
   const [ideas, setIdeas] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [useCompetitors, setUseCompetitors] = useState(false);
 
-  const hasEnoughData = episodes.filter(ep => ep.dimensions).length >= 3;
+  const primaryChannel = channels.find(c => c.isPrimary) || channels.find(c => !c.compareOnly);
+  const compareChannels = channels.filter(c => c.compareOnly);
+  const compareEpisodes = episodes.filter(e => compareChannels.some(c => c.id === e.channelId));
+  const hasCompetitorData = compareEpisodes.filter(e => e.dimensions || e.viewCount > 0).length >= 5;
+
+  const hasEnoughData = episodes
+    .filter(e => primaryChannel ? e.channelId === primaryChannel.id : true)
+    .filter(ep => ep.dimensions).length >= 3;
 
   useEffect(() => {
     fetchSavedIdeas()
@@ -110,7 +118,27 @@ export default function Ideas({ episodes, onWriteScript }) {
     setLoading(true);
     setError('');
     try {
-      const result = await generateEpisodeIdeas(episodes);
+      const myEpisodes = primaryChannel
+        ? episodes.filter(e => e.channelId === primaryChannel.id)
+        : episodes.filter(e => !compareChannels.some(c => c.id === e.channelId));
+      const competitorData = useCompetitors && hasCompetitorData
+        ? compareChannels.map(ch => ({
+            name: ch.name,
+            subscriberCount: ch.subscriberCount,
+            topVideos: compareEpisodes
+              .filter(e => e.channelId === ch.id && e.viewCount > 0)
+              .sort((a, b) => b.viewCount - a.viewCount)
+              .slice(0, 10)
+              .map(e => ({
+                title: e.title,
+                viewCount: e.viewCount,
+                topicCluster: e.dimensions?.topicCluster,
+                hookType: e.dimensions?.hookType,
+                contentType: e.dimensions?.contentType,
+              })),
+          })).filter(ch => ch.topVideos.length > 0)
+        : null;
+      const result = await generateEpisodeIdeas(myEpisodes, competitorData);
       setIdeas(result);
       await persistIdeas(result);
     } catch (e) {
@@ -146,6 +174,24 @@ export default function Ideas({ episodes, onWriteScript }) {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {compareChannels.length > 0 && (
+              <button
+                onClick={() => setUseCompetitors(v => !v)}
+                title={hasCompetitorData ? 'Include competitor insights in idea generation' : 'Add competitor channels in the Compare tab first'}
+                disabled={!hasCompetitorData}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                  useCompetitors
+                    ? 'border-th-accent/50 bg-th-accent/10 text-th-accent'
+                    : 'border-th-border text-th-tx3 hover:text-th-tx1 hover:border-th-border/80'
+                }`}
+              >
+                <Users size={13} />
+                Competitor insights
+                <span className={`w-7 h-4 rounded-full flex items-center transition-colors ${useCompetitors ? 'bg-th-accent' : 'bg-th-raised border border-th-border'}`}>
+                  <span className={`w-3 h-3 rounded-full bg-white shadow transition-transform ${useCompetitors ? 'translate-x-3.5' : 'translate-x-0.5'}`} />
+                </span>
+              </button>
+            )}
             {ideas && (
               <button
                 onClick={handleClear}

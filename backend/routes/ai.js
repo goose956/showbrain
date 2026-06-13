@@ -232,7 +232,7 @@ nichePatterns: 3-5 patterns. gaps: 2-3 gaps. newChannelPlaybook: exactly 5 actio
 // POST /api/ai/episode-ideas
 // body: { episodes }
 router.post('/episode-ideas', async (req, res) => {
-  const { episodes } = req.body;
+  const { episodes, competitorData } = req.body;
   if (!episodes) return res.status(400).json({ error: 'episodes required' });
 
   const episodeSummaries = episodes.slice(0, 40).map(ep => ({
@@ -251,6 +251,19 @@ router.post('/episode-ideas', async (req, res) => {
     topics: ep.topics,
   }));
 
+  const competitorSection = competitorData?.length > 0 ? `
+
+## Competitor channel data
+The creator has also provided top-performing videos from competitor channels in their niche. Use this to:
+- Identify topics that perform well in the niche but the creator hasn't covered
+- Spot title/hook patterns that drive high views for competitors
+- Find angles the creator could do better or differently
+- Avoid suggesting topics where competitors already dominate unless there's a clear differentiation angle
+
+${competitorData.map(ch => `### ${ch.name} (${ch.subscriberCount?.toLocaleString() || '?'} subscribers)
+Top videos:
+${ch.topVideos.map(v => `- "${v.title}" — ${v.viewCount?.toLocaleString()} views | topic: ${v.topicCluster || '?'} | hook: ${v.hookType || '?'}`).join('\n')}`).join('\n\n')}` : '';
+
   try {
     const response = await client.messages.create({
       model: 'claude-opus-4-8',
@@ -258,17 +271,18 @@ router.post('/episode-ideas', async (req, res) => {
       thinking: { type: 'adaptive' },
       messages: [{
         role: 'user',
-        content: `You are a content strategist for a YouTube creator. Analyse their episode history and generate 9 high-potential future episode ideas.
+        content: `You are a content strategist for a YouTube creator. Analyse their episode history${competitorData?.length ? ' and competitor data' : ''} and generate 9 high-potential future episode ideas.
 
-Episode history:
+## Creator's episode history
 ${JSON.stringify(episodeSummaries, null, 2)}
+${competitorSection}
 
 For each idea consider:
 - Which topic clusters drive the most views on this channel
 - What angles on successful topics have NOT been covered yet (gaps)
 - Episodes that could become follow-ups or series continuations
 - Topics that performed well but haven't been revisited recently
-- Adjacent topics the audience would likely enjoy based on patterns
+- Adjacent topics the audience would likely enjoy based on patterns${competitorData?.length ? '\n- Topics or formats proven to work for competitors that this creator could own with their unique angle' : ''}
 
 Return JSON only, no markdown fences:
 {
@@ -276,7 +290,7 @@ Return JSON only, no markdown fences:
     {
       "title": "Punchy episode title",
       "brief": "2-3 sentence description of what the episode covers — written as a brief for a script writer",
-      "why": "Specific data-backed reason this would perform well — reference actual view counts or patterns from their history",
+      "why": "Specific data-backed reason this would perform well — reference actual view counts or patterns from their history${competitorData?.length ? ', or competitor data if relevant' : ''}",
       "type": "gap|follow-up|series|trending|revisit",
       "recommendedFormat": "solo|interview|co-hosted|panel|narrative|qa",
       "recommendedHookType": "bold-claim|personal-story|controversial-question|surprising-statistic|cold-open|direct-challenge",
