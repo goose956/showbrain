@@ -3,7 +3,7 @@ import {
   Search, BarChart2, Lightbulb,
   Inbox, Plug, PenLine, FlaskConical,
   GitCompare, LineChart, ChevronDown, Zap, X,
-  Gauge, TvMinimalPlay, LayoutDashboard,
+  Gauge, TvMinimalPlay, LayoutDashboard, TrendingUp,
 } from 'lucide-react';
 
 const TOP_NAV = [
@@ -31,6 +31,14 @@ const nav = [
     items: [
       { id: 'ideas',        label: 'Ideas',   icon: FlaskConical, iconBg: 'bg-pink-500',   iconColor: 'text-white' },
       { id: 'scriptwriter', label: 'Scripts', icon: PenLine,      iconBg: 'bg-orange-500', iconColor: 'text-white' },
+    ],
+  },
+  {
+    section: 'Discover',
+    color: 'from-yellow-500/20 to-orange-500/10',
+    borderColor: 'border-yellow-500/20',
+    items: [
+      { id: 'trending', label: 'Trending', icon: TrendingUp, iconBg: 'bg-yellow-500', iconColor: 'text-white' },
     ],
   },
   {

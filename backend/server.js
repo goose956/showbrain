@@ -14,6 +14,7 @@ import { getChannels, getChannel, upsertChannel, deleteChannel, getEpisodes, get
 import { generatePosts } from './services/analyse.js';
 import { hashPassword, verifyPassword, createToken, verifyToken } from './services/auth.js';
 import aiRoutes from './routes/ai.js';
+import trendingRoutes from './routes/trending.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -128,6 +129,7 @@ app.delete('/api/admin/members/:id', requireAdmin, async (req, res) => {
 
 app.use('/api', requireAuth);
 app.use('/api/ai', aiRoutes);
+app.use('/api/trending', trendingRoutes);
 
 // ── channels ──────────────────────────────────────────────────────────────────
 

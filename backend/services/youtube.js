@@ -155,3 +155,37 @@ export async function getVideoDurations(videoIds) {
   }
   return results;
 }
+
+// Search for recent videos by keyword, sorted by view count
+export async function searchRecentVideos(query, { maxResults = 15, days = 7 } = {}) {
+  const publishedAfter = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const res = await fetch(
+    `${BASE}/search?part=snippet&q=${encodeURIComponent(query)}&type=video&order=viewCount&publishedAfter=${encodeURIComponent(publishedAfter)}&maxResults=${maxResults}&key=${API_KEY}`
+  );
+  const data = await res.json();
+  if (data.error) throw new Error(`YouTube search: ${data.error.message}`);
+  const items = data.items || [];
+  if (!items.length) return [];
+  const videoIds = items.map(i => i.id.videoId);
+  const stats = await getVideoDurations(videoIds);
+  return items.map(item => {
+    const vid = item.id.videoId;
+    const s = stats[vid] || {};
+    const publishedAt = item.snippet.publishedAt;
+    const hoursAgo = (Date.now() - new Date(publishedAt)) / (1000 * 60 * 60);
+    return {
+      videoId: vid,
+      title: item.snippet.title,
+      channelName: item.snippet.channelTitle,
+      channelId: item.snippet.channelId,
+      publishedAt,
+      hoursAgo: Math.round(hoursAgo),
+      thumbnail: item.snippet.thumbnails?.medium?.url,
+      youtubeUrl: `https://youtube.com/watch?v=${vid}`,
+      viewCount: s.viewCount || 0,
+      likeCount: s.likeCount || 0,
+      commentCount: s.commentCount || 0,
+      velocity: s.viewCount ? Math.round(s.viewCount / Math.max(1, hoursAgo)) : 0,
+    };
+  }).sort((a, b) => b.viewCount - a.viewCount);
+}
