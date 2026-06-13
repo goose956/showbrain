@@ -320,8 +320,8 @@ function AddChannelForm({ onAdded, onCancel }) {
 
 const SCORE_FACTORS = [
   { key: 'momentum',    label: 'Momentum',    weight: 0.40, color: '#34d399' },
-  { key: 'viewsPerSub', label: 'Views/Sub',   weight: 0.30, color: '#38bdf8' },
-  { key: 'engagement',  label: 'Engagement',  weight: 0.20, color: '#f472b6' },
+  { key: 'avgViews',    label: 'Avg Views',   weight: 0.35, color: '#38bdf8' },
+  { key: 'engagement',  label: 'Engagement',  weight: 0.15, color: '#f472b6' },
   { key: 'consistency', label: 'Consistency', weight: 0.10, color: '#fbbf24' },
 ];
 
@@ -329,8 +329,8 @@ function buildGrowthScores(channelStats) {
   // Raw values per channel per factor
   const raw = channelStats.map(ch => ({
     channelId: ch.channelId,
-    momentum:    ch.growthPct !== null ? Math.max(0, ch.growthPct + 100) : null, // shift so 0% growth = 100
-    viewsPerSub: ch.viewsPerSub,
+    momentum:    ch.growthPct !== null ? Math.max(0, ch.growthPct + 100) : null,
+    avgViews:    ch.avgViews || null,
     engagement:  ch.engagementRate,
     consistency: ch.ppm,
   }));
