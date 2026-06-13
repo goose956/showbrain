@@ -403,6 +403,11 @@ function GrowthScorePanel({ channelStats }) {
                 {ch.isPrimary && (
                   <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0">You</span>
                 )}
+                {ch.episodeCount < 20 && (
+                  <span className="text-[10px] font-medium bg-orange-500/15 text-orange-300 border border-orange-500/25 px-1.5 py-0.5 rounded-full shrink-0" title="Fewer than 20 videos — score may not be reliable">
+                    ⚠ Low data
+                  </span>
+                )}
               </div>
 
               {/* Score */}
