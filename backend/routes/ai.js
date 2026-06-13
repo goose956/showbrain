@@ -548,11 +548,20 @@ Return 5 tactical insights as JSON. Each insight must:
   }
 });
 
-// ── Outlier Analysis ──────────────────────────────────────────────────────────
-// POST /api/ai/outlier-analysis
-// Transcribes top 5 videos per channel (if needed), then analyses WHY they
-// outperformed and what patterns emerge across channels.
-router.post('/outlier-analysis', async (req, res) => {
+// ── Outlier Analysis (SSE streaming) ─────────────────────────────────────────
+// GET /api/ai/outlier-analysis/stream
+// Streams progress as it transcribes top 5 videos per channel, then returns
+// the final Claude analysis as a `result` event.
+router.get('/outlier-analysis/stream', async (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const send = (obj) => {
+    res.write(`data: ${JSON.stringify(obj)}\n\n`);
+  };
+
   const userId = req.userId;
   try {
     const [channels, allEpisodes] = await Promise.all([
@@ -560,25 +569,40 @@ router.post('/outlier-analysis', async (req, res) => {
       getEpisodes(userId),
     ]);
 
-    const channelData = [];
+    // Count total videos needing transcription for progress tracking
+    const workItems = channels.flatMap(ch => {
+      const eps = allEpisodes.filter(e => e.channelId === ch.id);
+      return [...eps]
+        .filter(e => e.viewCount > 0)
+        .sort((a, b) => b.viewCount - a.viewCount)
+        .slice(0, 5)
+        .map(ep => ({ ch, ep, eps }));
+    });
 
-    for (const ch of channels) {
+    const needsTranscript = workItems.filter(w => !w.ep.transcript).length;
+    const total = workItems.length;
+    let done = 0;
+
+    send({ type: 'start', total, needsTranscript, channels: channels.length });
+
+    // Process all channels in parallel, videos within each channel in parallel
+    const channelData = await Promise.all(channels.map(async (ch) => {
       const eps = allEpisodes.filter(e => e.channelId === ch.id);
       const top5 = [...eps]
         .filter(e => e.viewCount > 0)
         .sort((a, b) => b.viewCount - a.viewCount)
         .slice(0, 5);
 
-      const avgViews = eps.filter(e => e.viewCount > 0).reduce((s, e) => s + e.viewCount, 0) / (eps.filter(e => e.viewCount > 0).length || 1);
+      const avgViews = eps.filter(e => e.viewCount > 0)
+        .reduce((s, e) => s + e.viewCount, 0) / (eps.filter(e => e.viewCount > 0).length || 1);
 
-      const enriched = [];
-      for (const ep of top5) {
+      const enriched = await Promise.all(top5.map(async (ep) => {
         let transcript = ep.transcript;
         let dimensions = ep.dimensions;
         let summary = ep.summary;
 
-        // Fetch transcript if not already present
         if (!transcript) {
+          send({ type: 'progress', message: `Fetching transcript: "${ep.title.substring(0, 50)}…"`, done, total });
           try {
             const raw = await fetchCaptions(ep.videoId);
             transcript = await cleanupCaptions(raw, ep.title);
@@ -589,9 +613,7 @@ router.post('/outlier-analysis', async (req, res) => {
             summary = analysis.summary;
             dimensions = { ...ep.dimensions, ...dims };
             await upsertEpisode(userId, {
-              ...ep,
-              transcript,
-              summary,
+              ...ep, transcript, summary,
               topics: analysis.topics,
               sentiment: analysis.sentiment,
               dimensions,
@@ -599,16 +621,18 @@ router.post('/outlier-analysis', async (req, res) => {
               syncedAt: new Date().toISOString(),
             });
           } catch {
-            // No captions available — use title analysis only
+            send({ type: 'progress', message: `No captions for "${ep.title.substring(0, 40)}…" — using title only`, done, total });
           }
         }
 
+        done++;
+        send({ type: 'progress', message: `Done: "${ep.title.substring(0, 50)}…"`, done, total });
+
         const multiplier = avgViews > 0 ? ep.viewCount / avgViews : null;
-        enriched.push({
+        return {
           title: ep.title,
           viewCount: ep.viewCount,
           multiplier: multiplier ? parseFloat(multiplier.toFixed(1)) : null,
-          publishedAt: ep.publishedAt,
           format: dimensions?.format,
           hookType: dimensions?.hookType,
           contentType: dimensions?.contentType,
@@ -617,27 +641,31 @@ router.post('/outlier-analysis', async (req, res) => {
           titleStructure: dimensions?.titleStructure,
           summary: summary || null,
           openingLines: transcript ? transcript.substring(0, 400) : null,
-        });
-      }
+        };
+      }));
 
-      channelData.push({
+      return {
         channelName: ch.name,
         subscriberCount: ch.subscriberCount,
         avgViews: Math.round(avgViews),
         totalVideos: eps.length,
         topVideos: enriched,
-      });
-    }
+      };
+    }));
 
-    const response = await client.messages.create({
+    send({ type: 'analysing', message: 'Transcription complete — running AI analysis…' });
+
+    // Stream Claude response token-by-token through SSE
+    let fullText = '';
+    const stream = await client.messages.stream({
       model: 'claude-opus-4-8',
       max_tokens: 4000,
       thinking: { type: 'adaptive' },
       messages: [{
         role: 'user',
-        content: `You are a YouTube content strategist. Analyse the top 5 performing videos for each channel below and identify WHY they outperformed — look for patterns across titles, hooks, formats, topics, and opening lines.
+        content: `You are a YouTube content strategist. Analyse the top 5 performing videos for each channel and identify WHY they outperformed — look for patterns across titles, hooks, formats, topics, and opening lines.
 
-Channel data with top videos (viewMultiplier = how many times the channel average this video got):
+Channel data (viewMultiplier = how many times the channel average this video achieved):
 ${JSON.stringify(channelData, null, 2)}
 
 Return JSON only, no markdown:
@@ -666,7 +694,7 @@ Return JSON only, no markdown:
     "Specific title formula that recurs in top videos — e.g. 'How I [outcome] without [pain point]'"
   ],
   "steal": [
-    "Specific, actionable thing to copy — e.g. 'Open with a dollar figure in the first 10 seconds'",
+    "Specific, actionable thing to copy",
     "Specific thing 2",
     "Specific thing 3",
     "Specific thing 4",
@@ -676,11 +704,19 @@ Return JSON only, no markdown:
       }],
     });
 
-    const text = response.content.find(b => b.type === 'text')?.text || '';
-    res.json(parseJson(text));
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
+        fullText += event.delta.text;
+        send({ type: 'token', text: event.delta.text });
+      }
+    }
+
+    send({ type: 'result', data: parseJson(fullText) });
   } catch (err) {
-    console.error('[outlier-analysis]', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('[outlier-analysis/stream]', err.message);
+    send({ type: 'error', message: err.message });
+  } finally {
+    res.end();
   }
 });
 

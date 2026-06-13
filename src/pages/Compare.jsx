@@ -506,6 +506,8 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
   const [insights, setInsights] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [insightError, setInsightError] = useState('');
+  const [progress, setProgress] = useState(null); // { done, total, message }
+  const [streamText, setStreamText] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   // Map of channelId → { running, analysed, total }
   const [topAnalysis, setTopAnalysis] = useState({});
@@ -568,14 +570,29 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
   const handleGenerate = async () => {
     setGenerating(true);
     setInsightError('');
+    setProgress(null);
+    setStreamText('');
+    setInsights(null);
     try {
-      const result = await generateOutlierAnalysis();
+      const result = await generateOutlierAnalysis((event) => {
+        if (event.type === 'start') {
+          setProgress({ done: 0, total: event.total, message: `Starting — ${event.needsTranscript} videos need transcription across ${event.channels} channels` });
+        } else if (event.type === 'progress') {
+          setProgress(p => ({ ...p, done: event.done, total: event.total, message: event.message }));
+        } else if (event.type === 'analysing') {
+          setProgress(p => ({ ...p, message: event.message, analysing: true }));
+        } else if (event.type === 'token') {
+          setStreamText(t => t + event.text);
+        }
+      });
       setInsights(result);
+      setStreamText('');
       persistInsights('compareInsights', result).catch(() => {});
     } catch (e) {
       setInsightError(e.message);
     } finally {
       setGenerating(false);
+      setProgress(null);
     }
   };
 
@@ -811,6 +828,38 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
             <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4">
               <AlertCircle size={15} className="text-red-400 shrink-0 mt-0.5" />
               <p className="text-red-300 text-sm">{insightError}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Progress bar while generating */}
+        {generating && progress && (
+          <div className="px-6 py-6 border-t border-th-border">
+            <div className="bg-th-surface border border-th-border rounded-xl p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-th-tx1 text-sm font-medium flex items-center gap-2">
+                  <Loader2 size={13} className="animate-spin text-th-accent" />
+                  {progress.analysing ? 'Analysing…' : 'Preparing transcripts…'}
+                </span>
+                {!progress.analysing && (
+                  <span className="text-th-tx3 text-xs tabular-nums">{progress.done}/{progress.total}</span>
+                )}
+              </div>
+              {!progress.analysing && (
+                <div className="h-1.5 bg-th-raised rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-th-accent rounded-full transition-all duration-300"
+                    style={{ width: `${progress.total > 0 ? (progress.done / progress.total) * 100 : 0}%` }}
+                  />
+                </div>
+              )}
+              <p className="text-th-tx4 text-xs truncate">{progress.message}</p>
+              {streamText && (
+                <div className="mt-2 pt-3 border-t border-th-border">
+                  <p className="text-th-tx4 text-[11px] mb-1 uppercase tracking-wider">Analysis incoming…</p>
+                  <p className="text-th-tx3 text-xs leading-relaxed font-mono whitespace-pre-wrap max-h-32 overflow-hidden">{streamText.slice(-400)}</p>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -55,9 +55,36 @@ export async function generateCrossChannelInsights(channelStats) {
   return post('/api/ai/cross-channel-insights', { channelStats });
 }
 
-// ── Outlier Analysis ──────────────────────────────────────────────────────────
-export async function generateOutlierAnalysis() {
-  return post('/api/ai/outlier-analysis', {});
+// ── Outlier Analysis (SSE) ────────────────────────────────────────────────────
+// onEvent({ type, ...}) called for each SSE event including 'token' chunks
+// Returns the final parsed result object when complete
+export async function generateOutlierAnalysis(onEvent) {
+  const token = getStoredToken();
+  const base = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+  const res = await fetch(`${base}/api/ai/outlier-analysis/stream`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Stream request failed');
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const event = JSON.parse(line.slice(6));
+      if (event.type === 'result') return event.data;
+      if (event.type === 'error') throw new Error(event.message);
+      onEvent?.(event);
+    }
+  }
+  throw new Error('Stream ended without result');
 }
 
 // ── Episode Ideas ─────────────────────────────────────────────────────────────
