@@ -137,22 +137,31 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
   const [insights, setInsights] = useState(null);
   const [generatingInsights, setGeneratingInsights] = useState(false);
   const [page, setPage] = useState(1);
-  const [selectedChannel, setSelectedChannel] = useState('all');
+  const [selectedChannel, setSelectedChannel] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     fetchSavedInsights('channelInsights').then(saved => { if (saved) setInsights(saved); }).catch(() => {});
   }, []);
 
-  // Derive unique channels from episodes
+  // Derive unique channels — primary (non-compare) first, then compare channels
   const channels = Array.from(
     new Map(episodes.map(e => [e.channelId, { id: e.channelId, name: e.channelName || e.channelId }])).values()
   );
 
+  // Auto-select the first channel once episodes load
+  useEffect(() => {
+    if (!selectedChannel && channels.length > 0) {
+      setSelectedChannel(channels[0].id);
+    }
+  }, [channels.length]);
+
+  const activeChannel = selectedChannel || channels[0]?.id || null;
+
   // Channel-filtered episodes (everything else is derived from this)
-  const channelEpisodes = selectedChannel === 'all'
-    ? episodes
-    : episodes.filter(e => e.channelId === selectedChannel);
+  const channelEpisodes = activeChannel
+    ? episodes.filter(e => e.channelId === activeChannel)
+    : episodes;
 
   const handleChannelChange = (id) => {
     setSelectedChannel(id);
@@ -269,20 +278,9 @@ export default function Intelligence({ episodes, onEpisodesUpdate }) {
         {/* Channel selector */}
         {channels.length > 1 && (
           <div className="flex items-center gap-1 mb-3 flex-wrap">
-            <button
-              onClick={() => handleChannelChange('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                selectedChannel === 'all'
-                  ? 'bg-th-border text-th-tx1 border-th-border'
-                  : 'text-th-tx3 border-th-border hover:text-th-tx1 hover:border-th-border'
-              }`}
-            >
-              All channels
-              <span className="ml-1.5 text-th-tx3 font-normal">{episodes.length}</span>
-            </button>
             {channels.map(ch => {
               const count = episodes.filter(e => e.channelId === ch.id).length;
-              const isActive = selectedChannel === ch.id;
+              const isActive = activeChannel === ch.id;
               return (
                 <button
                   key={ch.id}
