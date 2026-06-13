@@ -653,34 +653,78 @@ router.get('/outlier-analysis/stream', async (req, res) => {
       };
     }));
 
+    // Compute hard stats to feed into Claude
+    const allTopVideos = channelData.flatMap(ch => ch.topVideos);
+    const totalVids = allTopVideos.length;
+
+    function dist(arr, key) {
+      const counts = {};
+      for (const v of arr) { const k = v[key]; if (k) counts[k] = (counts[k] || 0) + 1; }
+      return Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([label, count]) => ({ label, count, pct: Math.round((count / totalVids) * 100) }));
+    }
+
+    const withMultiplier = allTopVideos.filter(v => v.multiplier !== null);
+    const avgMultiplier = withMultiplier.length
+      ? parseFloat((withMultiplier.reduce((s, v) => s + v.multiplier, 0) / withMultiplier.length).toFixed(1))
+      : null;
+
+    const aggregated = {
+      totalTopVideos: totalVids,
+      avgViewMultiplier: avgMultiplier,
+      hookTypes: dist(allTopVideos, 'hookType'),
+      formats: dist(allTopVideos, 'format'),
+      contentTypes: dist(allTopVideos, 'contentType'),
+      emotionalTones: dist(allTopVideos, 'emotionalTone'),
+      topicClusters: dist(allTopVideos, 'topicCluster').slice(0, 8),
+    };
+
     send({ type: 'analysing', message: 'Transcription complete — running AI analysis…' });
 
     // Stream Claude response token-by-token through SSE
     let fullText = '';
     const stream = await client.messages.stream({
       model: 'claude-opus-4-8',
-      max_tokens: 4000,
+      max_tokens: 5000,
       thinking: { type: 'adaptive' },
       messages: [{
         role: 'user',
-        content: `You are a YouTube content strategist. Analyse the top 5 performing videos for each channel and identify WHY they outperformed — look for patterns across titles, hooks, formats, topics, and opening lines.
+        content: `You are a YouTube content strategist. You have two datasets:
 
-Channel data (viewMultiplier = how many times the channel average this video achieved):
+1. Top 5 performing videos per channel with full context (titles, hooks, transcripts, view multipliers)
+2. Aggregated stats across all top videos
+
+Your job: use the hard data to draw an overall conclusion about what wins in this niche, then dig into the WHY using the individual video data.
+
+AGGREGATED STATS (use these exact numbers in overallTake):
+${JSON.stringify(aggregated, null, 2)}
+
+INDIVIDUAL CHANNEL DATA (viewMultiplier = how many times their channel average):
 ${JSON.stringify(channelData, null, 2)}
 
 Return JSON only, no markdown:
 {
+  "overallTake": {
+    "headline": "One punchy sentence summarising what wins in this niche",
+    "dataPoints": [
+      "X% of top videos used [hook type] hooks",
+      "Top videos averaged Xx the channel average views",
+      "Other hard stat with % or number from the aggregated data"
+    ],
+    "conclusion": "2-3 sentences on what this means — what the data collectively says about what works and why"
+  },
   "outlierPatterns": [
     {
       "pattern": "Short name for the pattern",
-      "finding": "Specific observation — which channels, which videos, what the data shows",
+      "finding": "Specific observation backed by data — which channels, which videos, what numbers",
       "strength": "strong|moderate",
       "examples": ["Video title 1 (Channel)", "Video title 2 (Channel)"]
     }
   ],
   "hookAnalysis": {
-    "dominantHook": "The hook type that appears most in top videos across channels",
-    "whyItWorks": "Why this hook drives outsized views in this niche",
+    "dominantHook": "The hook type that dominates top videos",
+    "whyItWorks": "Why this hook drives outsized views in this niche specifically",
     "bestExample": "Title of the best example"
   },
   "topicClusters": [
@@ -691,10 +735,10 @@ Return JSON only, no markdown:
     }
   ],
   "titlePatterns": [
-    "Specific title formula that recurs in top videos — e.g. 'How I [outcome] without [pain point]'"
+    "Specific title formula that recurs — e.g. 'How I [outcome] without [pain point]'"
   ],
   "steal": [
-    "Specific, actionable thing to copy",
+    "Specific, actionable thing to copy — lead with the data if relevant",
     "Specific thing 2",
     "Specific thing 3",
     "Specific thing 4",

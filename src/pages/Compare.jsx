@@ -190,6 +190,23 @@ function OutlierPanel({ insights }) {
   return (
     <div className="space-y-6">
 
+      {insights.overallTake && (
+        <div className="bg-th-accent/10 border border-th-accent/25 rounded-xl p-5">
+          <h3 className="text-th-accent text-sm font-semibold mb-3 flex items-center gap-2">
+            <Sparkles size={13} /> Overall take
+          </h3>
+          <p className="text-th-tx1 text-sm font-medium mb-3">{insights.overallTake.headline}</p>
+          {insights.overallTake.dataPoints?.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {insights.overallTake.dataPoints.map((dp, i) => (
+                <span key={i} className="text-[11px] bg-th-raised border border-th-border text-th-tx2 px-2.5 py-1 rounded-full">{dp}</span>
+              ))}
+            </div>
+          )}
+          <p className="text-th-tx2 text-xs leading-relaxed">{insights.overallTake.conclusion}</p>
+        </div>
+      )}
+
       {insights.outlierPatterns?.length > 0 && (
         <div>
           <h3 className="text-th-tx1 text-sm font-semibold mb-3 flex items-center gap-2">
