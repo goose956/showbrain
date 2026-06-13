@@ -352,6 +352,7 @@ export default function Trending({ channels = [], onWriteScript }) {
   );
 
   return (
+    <>
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="border-b border-th-border px-6 py-4 shrink-0">
@@ -479,5 +480,6 @@ export default function Trending({ channels = [], onWriteScript }) {
       </div>
     </div>
     <VideoModal video={watchVideo} onClose={() => setWatchVideo(null)} />
+    </>
   );
 }
