@@ -31,7 +31,7 @@ export function getSyncState(userId) {
 
 export const syncState = EMPTY_STATE();
 
-async function processVideo(userId, video, channelId, channelName) {
+export async function processVideo(userId, video, channelId, channelName) {
   const state = getSyncState(userId);
   console.log(`[sync:${userId}] Processing: ${video.title}`);
   state.currentVideo = video.title;

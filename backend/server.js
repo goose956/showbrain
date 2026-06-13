@@ -9,7 +9,7 @@ import { randomUUID } from 'crypto';
 import { initSchema } from './services/db.js';
 import { resolveChannelId, getChannelInfo, getChannelVideosPage, getAllChannelVideos, getVideoDurations } from './services/youtube.js';
 import { analyseTitlesBatch } from './services/analyse.js';
-import { syncChannel, getSyncState, analyseTopVideos, getTopAnalysisState } from './services/sync.js';
+import { syncChannel, getSyncState, processVideo, analyseTopVideos, getTopAnalysisState } from './services/sync.js';
 import { getChannels, getChannel, upsertChannel, deleteChannel, getEpisodes, getEpisodeByVideoId, getClicks, logClick, addWaitlistEmail, upsertEpisode, getMembers, getMemberById, getMemberByUsername, createMember, deleteMember, getUserSettings, setUserSettings, getPosts, savePost, updatePostStatus, deletePost, getIdeas, saveIdeas, deleteIdeas, getScripts, saveScript, deleteScript } from './services/store.js';
 import { generatePosts } from './services/analyse.js';
 import { hashPassword, verifyPassword, createToken, verifyToken } from './services/auth.js';
@@ -389,6 +389,57 @@ app.get('/api/episodes', async (req, res) => {
 app.get('/api/channels/:id/episodes', async (req, res) => {
   try { res.json(await getEpisodes(req.userId, req.params.id)); }
   catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Transcribe a single episode directly (no need to re-fetch full channel video list)
+app.post('/api/episodes/:id/transcribe', async (req, res) => {
+  const state = getSyncState(req.userId);
+  if (state.running) return res.status(409).json({ error: 'Sync already in progress' });
+  try {
+    const episodes = await getEpisodes(req.userId);
+    const ep = episodes.find(e => e.id === req.params.id);
+    if (!ep) return res.status(404).json({ error: 'Episode not found' });
+    const channel = await getChannel(req.userId, ep.channelId);
+    if (!channel) return res.status(404).json({ error: 'Channel not found' });
+
+    res.json({ ok: true });
+
+    // Build a minimal video object from the stored episode data
+    const video = {
+      videoId: ep.videoId,
+      title: ep.title,
+      publishedAt: ep.publishedAt,
+      youtubeUrl: ep.youtubeUrl,
+      thumbnail: ep.thumbnail,
+      duration: ep.duration,
+      viewCount: ep.viewCount,
+      likeCount: ep.likeCount,
+      commentCount: ep.commentCount,
+    };
+
+    Object.assign(state, {
+      running: true, userId: req.userId, channelId: channel.id, channelName: channel.name,
+      errors: [], processed: 0, progress: 0, total: 1, currentBatch: 1, totalBatches: 1,
+      currentVideo: ep.title,
+    });
+
+    (async () => {
+      try {
+        await processVideo(req.userId, video, channel.id, channel.name);
+        state.processed = 1;
+        state.progress = 100;
+      } catch (err) {
+        console.error('[transcribe-single]', err.message);
+        state.errors.push({ videoId: ep.videoId, title: ep.title, error: err.message });
+      } finally {
+        state.running = false;
+        state.currentVideo = null;
+        state.lastSyncedAt = new Date().toISOString();
+      }
+    })();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/episodes/:id/posts', async (req, res) => {

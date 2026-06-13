@@ -127,16 +127,12 @@ export default function Dashboard({ episodes, channels = [], syncStatus, onSyncS
 
   const handleTranscribe = async (ep, e) => {
     e.stopPropagation();
-    if (!primaryChannel || transcribing) return;
+    if (transcribing) return;
     setTranscribing(ep.videoId);
     try {
-      const res = await apiFetch(`/api/channels/${primaryChannel.id}/sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoIds: [ep.videoId], batchSize: 1 }),
-      });
+      const res = await apiFetch(`/api/episodes/${ep.id}/transcribe`, { method: 'POST' });
       if (!res.ok) throw new Error((await res.json()).error);
-      onSyncStart?.(primaryChannel.id);
+      onSyncStart?.(ep.channelId);
     } catch (err) {
       setErrorMsg(err.message);
       setTranscribing(null);
