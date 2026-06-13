@@ -146,6 +146,44 @@ app.get('/api/channels', async (req, res) => {
   }
 });
 
+// Shared: fetch all video stats + title analysis for a channel, store as episodes
+// compareOnly controls the flag on the channel + transcriptStatus on episodes
+async function populateChannelVideos(userId, channelId, channelName, compareOnly) {
+  try {
+    const videos = await getAllChannelVideos(channelId);
+    const statsMap = await getVideoDurations(videos.map(v => v.videoId));
+    let titleDimensions = [];
+    try { titleDimensions = await analyseTitlesBatch(videos); } catch {}
+
+    for (let i = 0; i < videos.length; i++) {
+      const v = videos[i];
+      const stats = statsMap[v.videoId] || {};
+      const dims = titleDimensions[i] || null;
+      await upsertEpisode(userId, {
+        id: `${userId}-${v.videoId}`,
+        channelId,
+        channelName,
+        videoId: v.videoId,
+        title: v.title,
+        show: channelName,
+        publishedAt: v.publishedAt ? v.publishedAt.split('T')[0] : null,
+        youtubeUrl: v.youtubeUrl,
+        thumbnail: v.thumbnail,
+        duration: stats.duration || null,
+        viewCount: stats.viewCount || 0,
+        likeCount: stats.likeCount || 0,
+        commentCount: stats.commentCount || 0,
+        transcript: null,
+        transcriptStatus: compareOnly ? 'compare_only' : 'pending',
+        dimensions: dims ? { hookType: dims.hookType, contentType: dims.contentType, topicCluster: dims.topicCluster } : null,
+      });
+    }
+    console.log(`[populate:${channelId}] ${videos.length} videos stored`);
+  } catch (err) {
+    console.error(`[populate:${channelId}] Failed:`, err.message);
+  }
+}
+
 app.post('/api/channels', async (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ error: 'url is required' });
@@ -156,6 +194,9 @@ app.post('/api/channels', async (req, res) => {
     const channel = { ...info, addedAt: new Date().toISOString(), lastSyncedAt: null };
     await upsertChannel(req.userId, channel);
     res.json({ channel });
+
+    // Background: populate all videos with stats + title analysis immediately
+    populateChannelVideos(req.userId, channelId, info.name, false);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -169,22 +210,7 @@ app.post('/api/channels/compare-import', async (req, res) => {
     const channelId = await resolveChannelId(url);
     if (await getChannel(req.userId, channelId)) return res.status(409).json({ error: 'Channel already added' });
 
-    // 1. Channel metadata
     const info = await getChannelInfo(channelId);
-
-    // 2. All videos
-    const videos = await getAllChannelVideos(channelId);
-
-    // 3. Stats for all videos in batches
-    const statsMap = await getVideoDurations(videos.map(v => v.videoId));
-
-    // 4. Batch title analysis
-    let titleDimensions = [];
-    try {
-      titleDimensions = await analyseTitlesBatch(videos);
-    } catch {}
-
-    // 5. Save channel
     const channel = {
       ...info,
       compareOnly: true,
@@ -193,36 +219,10 @@ app.post('/api/channels/compare-import', async (req, res) => {
     };
     await upsertChannel(req.userId, channel);
 
-    // 6. Save episodes (stats only, no transcript)
-    for (let i = 0; i < videos.length; i++) {
-      const v = videos[i];
-      const stats = statsMap[v.videoId] || {};
-      const dims = titleDimensions[i] || null;
-      await upsertEpisode(req.userId, {
-        id: `${req.userId}-${v.videoId}`,
-        channelId,
-        channelName: info.name,
-        videoId: v.videoId,
-        title: v.title,
-        show: info.name,
-        publishedAt: v.publishedAt ? v.publishedAt.split('T')[0] : null,
-        youtubeUrl: v.youtubeUrl,
-        thumbnail: v.thumbnail,
-        duration: stats.duration || null,
-        viewCount: stats.viewCount || 0,
-        likeCount: stats.likeCount || 0,
-        commentCount: stats.commentCount || 0,
-        transcript: null,
-        transcriptStatus: 'compare_only',
-        dimensions: dims ? {
-          hookType: dims.hookType,
-          contentType: dims.contentType,
-          topicCluster: dims.topicCluster,
-        } : null,
-      });
-    }
+    // Populate all videos synchronously (user waits during compare import)
+    await populateChannelVideos(req.userId, channelId, info.name, true);
 
-    res.json({ channel, videoCount: videos.length });
+    res.json({ channel });
 
     // Fire-and-forget: fetch transcripts + full analysis for top 5 videos
     analyseTopVideos(req.userId, channelId, 5).catch(err =>

@@ -543,6 +543,17 @@ export default function Channel({ onEpisodesLoaded, onChannelsLoaded, syncStatus
       setUrl('');
       setShowAddForm(false);
       setChannels(prev => [...prev, { ...data.channel, episodeCount: 0 }]);
+
+      // Reload episodes after background populate finishes (poll twice)
+      const reloadEpisodes = async () => {
+        try {
+          const epRes = await apiFetch('/api/episodes');
+          const eps = await epRes.json();
+          onEpisodesLoaded?.(eps);
+        } catch {}
+      };
+      setTimeout(reloadEpisodes, 8000);
+      setTimeout(reloadEpisodes, 20000);
     } catch (e) {
       setError(e.message);
     } finally {
