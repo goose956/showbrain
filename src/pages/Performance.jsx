@@ -45,8 +45,11 @@ function formatDuration(seconds) {
   return `${m}m`;
 }
 
-export default function Performance({ episodes }) {
-  if (episodes.length === 0) {
+export default function Performance({ episodes, channels = [] }) {
+  const primaryChannel = channels.find(c => c.isPrimary) || channels.find(c => !c.compareOnly) || channels[0];
+  const eps = primaryChannel ? episodes.filter(ep => ep.channelId === primaryChannel.id) : episodes;
+
+  if (eps.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-th-tx4 text-sm">
         No episodes yet. Add some to see performance data.
@@ -54,17 +57,17 @@ export default function Performance({ episodes }) {
     );
   }
 
-  const totalListens = episodes.reduce((s, ep) => s + (ep.viewCount || 0), 0);
-  const totalShares = episodes.reduce((s, ep) => s + (ep.likeCount || 0), 0);
-  const totalComments = episodes.reduce((s, ep) => s + (ep.commentCount || 0), 0);
-  const avgDuration = episodes.reduce((s, ep) => s + (ep.duration || 0), 0) / episodes.length;
+  const totalListens = eps.reduce((s, ep) => s + (ep.viewCount || 0), 0);
+  const totalShares = eps.reduce((s, ep) => s + (ep.likeCount || 0), 0);
+  const totalComments = eps.reduce((s, ep) => s + (ep.commentCount || 0), 0);
+  const avgDuration = eps.reduce((s, ep) => s + (ep.duration || 0), 0) / eps.length;
 
-  const withViews = episodes.filter(ep => ep.viewCount > 0);
+  const withViews = eps.filter(ep => ep.viewCount > 0);
   const topByListens = [...withViews].sort((a, b) => b.viewCount - a.viewCount);
   const topByLikes = [...withViews].sort((a, b) => b.likeCount - a.likeCount);
 
   const topicCounts = {};
-  episodes.forEach((ep) => {
+  eps.forEach((ep) => {
     ep.topics?.forEach((t) => {
       topicCounts[t] = (topicCounts[t] || 0) + 1;
     });
@@ -72,7 +75,7 @@ export default function Performance({ episodes }) {
   const topTopics = Object.entries(topicCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
 
   const sentimentCounts = {};
-  episodes.forEach((ep) => {
+  eps.forEach((ep) => {
     sentimentCounts[ep.sentiment] = (sentimentCounts[ep.sentiment] || 0) + 1;
   });
 
@@ -162,7 +165,7 @@ export default function Performance({ episodes }) {
                     <div key={sentiment} className="flex items-center gap-3">
                       <span className="text-xs text-th-tx2 w-16 capitalize">{sentiment}</span>
                       <div className="flex-1 h-1.5 bg-th-raised rounded-full overflow-hidden">
-                        <div className="h-full bg-th-accent rounded-full" style={{ width: `${(count / episodes.length) * 100}%` }} />
+                        <div className="h-full bg-th-accent rounded-full" style={{ width: `${(count / eps.length) * 100}%` }} />
                       </div>
                       <span className="text-xs text-th-tx3 w-4 text-right">{count}</span>
                     </div>

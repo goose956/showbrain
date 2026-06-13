@@ -185,7 +185,7 @@ export default function App() {
       case 'channel':      return <Channel onEpisodesLoaded={setEpisodes} onChannelsLoaded={setChannels} syncStatus={syncStatus} onSyncStart={handleSyncStart} />;
       case 'dashboard':    return <Dashboard episodes={episodes} channels={channels} syncStatus={syncStatus} onSyncStart={handleSyncStart} onEpisodesUpdate={setEpisodes} />;
       case 'search':       return <SemanticSearch episodes={episodes} />;
-      case 'performance':  return <Performance episodes={episodes} />;
+      case 'performance':  return <Performance episodes={episodes} channels={channels} />;
       case 'intelligence': return <Intelligence episodes={episodes} channels={channels} onEpisodesUpdate={setEpisodes} />;
       case 'compare':      return <Compare episodes={episodes} channels={channels} onChannelsLoaded={() => {
         apiFetch('/api/channels').then(r => r.json()).then(chs =>
