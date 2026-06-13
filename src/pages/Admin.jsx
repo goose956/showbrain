@@ -526,21 +526,28 @@ function ApiKeysTab() {
               </div>
               <span className="text-th-tx4 text-xs font-mono">{k.name}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <input
-                  type={show[k.name] ? 'text' : 'password'}
-                  placeholder={k.hasValue ? k.masked : 'Not set — paste key here'}
-                  value={edits[k.name] || ''}
-                  onChange={e => setEdits(prev => ({ ...prev, [k.name]: e.target.value }))}
-                  className="w-full bg-th-surface border border-th-border rounded-lg px-3 py-2 pr-9 text-sm text-th-tx1 placeholder-th-tx4 focus:outline-none focus:ring-1 focus:ring-th-accent font-mono"
-                />
+            {k.hasValue && (
+              <div className="flex items-center gap-2 mb-1.5 px-3 py-1.5 bg-th-bg border border-th-border rounded-lg">
+                <span className="flex-1 text-sm font-mono text-th-tx2 tracking-wider">
+                  {show[k.name] ? k.masked : '••••••••••••••••'}
+                </span>
                 <button
                   onClick={() => setShow(prev => ({ ...prev, [k.name]: !prev[k.name] }))}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-th-tx4 hover:text-th-tx2"
+                  className="text-th-tx4 hover:text-th-tx2 shrink-0"
                 >
                   {show[k.name] ? <EyeOff size={13} /> : <EyeIcon size={13} />}
                 </button>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder={k.hasValue ? 'Paste new key to replace…' : 'Not set — paste key here'}
+                  value={edits[k.name] || ''}
+                  onChange={e => setEdits(prev => ({ ...prev, [k.name]: e.target.value }))}
+                  className="w-full bg-th-surface border border-th-border rounded-lg px-3 py-2 text-sm text-th-tx1 placeholder-th-tx4 focus:outline-none focus:ring-1 focus:ring-th-accent font-mono"
+                />
               </div>
               {edits[k.name] && (
                 <button
