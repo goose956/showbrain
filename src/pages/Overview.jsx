@@ -160,7 +160,11 @@ export default function Overview({ episodes, channels, onNavigate }) {
           <StatCard
             icon={TvMinimalPlay} iconBg="bg-blue-500"
             label="Channel" value={stats.primary?.name || '—'}
-            sub={stats.primary ? `${stats.withStats.length.toLocaleString()} episodes tracked` : 'No channel set'}
+            sub={
+              stats.primary?.channelCreatedAt
+                ? `Est. ${new Date(stats.primary.channelCreatedAt).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}`
+                : stats.primary ? 'Channel' : 'No channel set'
+            }
           />
           <StatCard
             icon={FileText} iconBg="bg-indigo-500"
