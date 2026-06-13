@@ -2,7 +2,7 @@
  * Claude AI helpers — all calls go through the backend.
  * No Anthropic API key is needed in the browser.
  */
-import { apiFetch } from './api';
+import { apiFetch, getStoredToken } from './api';
 
 async function post(path, body) {
   const res = await apiFetch(path, {
