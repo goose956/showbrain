@@ -40,12 +40,26 @@ export default function SemanticSearch({ episodes }) {
     }
   };
 
+  const hasTranscripts = episodes.some(e => e.transcript || e.summary);
+
   return (
     <div className="max-w-2xl mx-auto py-10 px-4">
       <div className="mb-8">
-        <h1 className="text-th-tx1 text-2xl font-semibold mb-1">Semantic Search</h1>
+        <h1 className="text-th-tx1 text-2xl font-semibold mb-1">Search</h1>
         <p className="text-th-tx3 text-sm">Ask anything — AI finds the most relevant episodes.</p>
       </div>
+
+      {!hasTranscripts && (
+        <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6">
+          <span className="text-amber-400 text-lg leading-none shrink-0">⚠</span>
+          <div>
+            <p className="text-amber-300 text-sm font-medium mb-0.5">No transcripts yet</p>
+            <p className="text-amber-300/70 text-xs leading-relaxed">
+              Search works by reading your episode transcripts and summaries. Head to the <strong>Channel</strong> page and run a sync to transcribe your episodes first.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-2 mb-4">
         <div className="flex-1 relative">
