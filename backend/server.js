@@ -16,6 +16,7 @@ import { hashPassword, verifyPassword, createToken, verifyToken } from './servic
 import aiRoutes from './routes/ai.js';
 import trendingRoutes from './routes/trending.js';
 import { adminRouter, supportRouter } from './routes/adminExtra.js';
+import guestRoutes from './routes/guests.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -169,6 +170,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/trending', trendingRoutes);
 app.use('/api/admin', (req, res, next) => req.isAdmin ? next() : res.status(403).json({ error: 'Admin only' }), adminRouter);
 app.use('/api/support', supportRouter);
+app.use('/api/guests', requireAuth, guestRoutes);
 
 // ── channels ──────────────────────────────────────────────────────────────────
 

@@ -512,6 +512,54 @@ export async function logApiError({ id, userId, username, path, method, status, 
   );
 }
 
+// ── guests ────────────────────────────────────────────────────────────────────
+
+function rowToGuest(r) {
+  if (!r) return null;
+  return {
+    id: r.id,
+    name: r.name,
+    url: r.url || null,
+    email: r.email || null,
+    bio: r.bio || null,
+    topics: r.topics || [],
+    notes: r.notes || null,
+    status: r.status,
+    questions: r.questions || [],
+    outreach: r.outreach || null,
+    createdAt: r.created_at,
+  };
+}
+
+export async function getGuests(userId) {
+  const { rows } = await query(
+    `SELECT * FROM guests WHERE user_id = $1 ORDER BY created_at DESC`,
+    [userId]
+  );
+  return rows.map(rowToGuest);
+}
+
+export async function upsertGuest({ id, userId, name, url, email, bio, topics, notes, status, questions, outreach }) {
+  const guestId = id || randomUUID();
+  await query(
+    `INSERT INTO guests (id, user_id, name, url, email, bio, topics, notes, status, questions, outreach)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+     ON CONFLICT (id, user_id) DO UPDATE SET
+       name = EXCLUDED.name, url = EXCLUDED.url, email = EXCLUDED.email,
+       bio = EXCLUDED.bio, topics = EXCLUDED.topics, notes = EXCLUDED.notes,
+       status = EXCLUDED.status, questions = EXCLUDED.questions, outreach = EXCLUDED.outreach`,
+    [guestId, userId, name, url || null, email || null, bio || null,
+     JSON.stringify(topics || []), notes || null, status || 'research',
+     JSON.stringify(questions || []), outreach || null]
+  );
+  const { rows } = await query(`SELECT * FROM guests WHERE id = $1 AND user_id = $2`, [guestId, userId]);
+  return rowToGuest(rows[0]);
+}
+
+export async function deleteGuest(userId, guestId) {
+  await query(`DELETE FROM guests WHERE id = $1 AND user_id = $2`, [guestId, userId]);
+}
+
 export async function getApiErrors(limit = 100) {
   const { rows } = await query(
     `SELECT * FROM api_errors ORDER BY occurred_at DESC LIMIT $1`,

@@ -15,6 +15,7 @@ import Compare from './pages/Compare';
 import Analytics from './pages/Analytics';
 import Trending from './pages/Trending';
 import Help from './pages/Help';
+import Guests from './pages/Guests';
 import Waitlist from './pages/Waitlist';
 import Admin from './pages/Admin';
 import Login from './pages/Login';
@@ -227,6 +228,7 @@ export default function App() {
       }} />;
       case 'ideas':        return <Ideas episodes={episodes} channels={channels} onWriteScript={handleWriteScript} ideas={episodeIdeas} onIdeasUpdate={setEpisodeIdeas} />;
       case 'scriptwriter': return <ScriptWriter key={scriptBrief} episodes={episodes} initialBrief={scriptBrief} />;
+      case 'guests':       return <Guests channels={channels} episodes={episodes} />;
       case 'trending':     return <Trending channels={channels} onWriteScript={handleWriteScript} />;
       case 'queue':        return <PostQueue episodes={episodes} />;
       case 'settings':     return <Settings />;

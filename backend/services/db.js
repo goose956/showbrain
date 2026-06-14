@@ -178,6 +178,24 @@ export async function initSchema() {
     );
 
     CREATE INDEX IF NOT EXISTS api_errors_occurred_at ON api_errors (occurred_at DESC);
+
+    CREATE TABLE IF NOT EXISTS guests (
+      id          TEXT NOT NULL,
+      user_id     TEXT NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      name        TEXT NOT NULL,
+      url         TEXT,
+      email       TEXT,
+      bio         TEXT,
+      topics      JSONB DEFAULT '[]',
+      notes       TEXT,
+      status      TEXT NOT NULL DEFAULT 'research',
+      questions   JSONB DEFAULT '[]',
+      outreach    TEXT,
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (id, user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS guests_user_id ON guests (user_id, created_at DESC);
   `);
   console.log('[db] Schema ready');
 }
