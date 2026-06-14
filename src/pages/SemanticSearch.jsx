@@ -50,11 +50,11 @@ export default function SemanticSearch({ episodes }) {
       </div>
 
       {!hasTranscripts && (
-        <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6">
-          <span className="text-amber-400 text-lg leading-none shrink-0">⚠</span>
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-300 rounded-xl p-4 mb-6 dark:bg-amber-500/10 dark:border-amber-500/20">
+          <span className="text-amber-600 text-lg leading-none shrink-0">⚠</span>
           <div>
-            <p className="text-amber-300 text-sm font-medium mb-0.5">No transcripts yet</p>
-            <p className="text-amber-300/70 text-xs leading-relaxed">
+            <p className="text-amber-800 text-sm font-medium mb-0.5 dark:text-amber-300">No transcripts yet</p>
+            <p className="text-amber-700 text-xs leading-relaxed dark:text-amber-300/70">
               Search works by reading your episode transcripts and summaries. Head to the <strong>Channel</strong> page and run a sync to transcribe your episodes first.
             </p>
           </div>
