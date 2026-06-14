@@ -252,6 +252,28 @@ function GuestPanel({ guest, channels, episodes, onUpdate, onDelete, onClose }) 
         </div>
       </div>
 
+      {/* Step indicator */}
+      <div className="px-5 py-2.5 border-b border-th-border bg-th-raised/30 shrink-0">
+        <div className="flex items-center gap-1.5 text-[11px]">
+          {[
+            { step: 1, label: 'Research', done: !!guest.bio },
+            { step: 2, label: 'Questions', done: guest.questions?.length > 0 },
+            { step: 3, label: 'Outreach', done: !!guest.outreach },
+          ].map(({ step, label, done }, i, arr) => (
+            <span key={step} className="flex items-center gap-1.5">
+              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${done ? 'bg-emerald-500 text-white' : 'bg-th-raised border border-th-border text-th-tx4'}`}>
+                {done ? '✓' : step}
+              </span>
+              <span className={done ? 'text-th-tx2' : 'text-th-tx4'}>{label}</span>
+              {i < arr.length - 1 && <span className="text-th-tx4 mx-0.5">→</span>}
+            </span>
+          ))}
+          {!guest.bio && (
+            <span className="ml-2 text-amber-400 text-[10px]">← Start here</span>
+          )}
+        </div>
+      </div>
+
       {/* Tabs */}
       <div className="flex border-b border-th-border shrink-0">
         {[
@@ -420,12 +442,20 @@ function GuestPanel({ guest, channels, episodes, onUpdate, onDelete, onClose }) 
         {/* ── Outreach tab ── */}
         {tab === 'outreach' && (
           <div className="space-y-5">
+            {!guest.bio && (
+              <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-xs text-amber-300">
+                <AlertCircle size={12} className="shrink-0 mt-0.5" />
+                <span>Complete the <button onClick={() => setTab('research')} className="underline hover:text-amber-200">Research tab</button> first — the AI needs their bio to write a personalised email.</span>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <p className="text-th-tx3 text-xs">AI-drafted outreach email ready to send.</p>
               <button
                 onClick={() => aiCall('outreach')}
-                disabled={!!loading}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-th-accent hover:bg-th-accentH disabled:opacity-40 text-th-accentFg text-xs font-medium transition-colors shrink-0"
+                disabled={!!loading || !guest.bio}
+                title={!guest.bio ? 'Research the guest first' : ''}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-th-accent hover:bg-th-accentH disabled:opacity-40 disabled:cursor-not-allowed text-th-accentFg text-xs font-medium transition-colors shrink-0"
               >
                 {loading === 'outreach' ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
                 {guest.outreach ? 'Redraft' : 'Draft email'}
@@ -439,7 +469,7 @@ function GuestPanel({ guest, channels, episodes, onUpdate, onDelete, onClose }) 
               </div>
             )}
 
-            {!guest.outreach && !loading && (
+            {!guest.outreach && !loading && guest.bio && (
               <div className="text-center py-10 text-th-tx4 text-xs">
                 Click "Draft email" to generate a personalised outreach message.
               </div>
