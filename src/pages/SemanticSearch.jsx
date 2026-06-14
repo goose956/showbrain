@@ -44,7 +44,7 @@ export default function SemanticSearch({ episodes }) {
     <div className="max-w-2xl mx-auto py-10 px-4">
       <div className="mb-8">
         <h1 className="text-th-tx1 text-2xl font-semibold mb-1">Semantic Search</h1>
-        <p className="text-th-tx3 text-sm">Ask anything — Claude finds the most relevant episodes.</p>
+        <p className="text-th-tx3 text-sm">Ask anything — AI finds the most relevant episodes.</p>
       </div>
 
       <div className="flex gap-2 mb-4">

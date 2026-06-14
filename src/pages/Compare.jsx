@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import {
   GitCompare, Sparkles, Loader2, AlertCircle, ChevronUp, ChevronDown,
   ChevronsUpDown, TrendingUp, Zap, Target, Plus, X, Trophy, Users,
-  BarChart2, ArrowUpRight, BookOpen,
+  BarChart2, ArrowUpRight, BookOpen, Image,
 } from 'lucide-react';
 import { generateOutlierAnalysis, fetchSavedInsights, persistInsights } from '../lib/claude';
 import { apiFetch } from '../lib/api';
@@ -293,6 +293,171 @@ function OutlierPanel({ insights }) {
         </div>
       )}
 
+    </div>
+  );
+}
+
+// ── thumbnail panel ───────────────────────────────────────────────────────────
+
+function ThumbnailGrid({ channelStats }) {
+  const [analysis, setAnalysis] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleAnalyse = async () => {
+    setLoading(true);
+    setError('');
+    setAnalysis(null);
+    try {
+      const payload = channelStats.map(ch => ({
+        channelId: ch.channelId,
+        channelName: ch.name,
+        videos: [...ch.episodes]
+          .filter(e => e.thumbnail && e.viewCount > 0)
+          .sort((a, b) => b.viewCount - a.viewCount)
+          .slice(0, 10)
+          .map(e => ({ title: e.title, thumbnail: e.thumbnail, viewCount: e.viewCount })),
+      }));
+      const res = await apiFetch('/api/ai/thumbnail-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channels: payload }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      setAnalysis(await res.json());
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      {/* Thumbnail grids per channel */}
+      <div className="space-y-8">
+        {channelStats.map((ch, i) => {
+          const pal = CHANNEL_PALETTE[i % CHANNEL_PALETTE.length];
+          const topVideos = [...ch.episodes]
+            .filter(e => e.thumbnail && e.viewCount > 0)
+            .sort((a, b) => b.viewCount - a.viewCount)
+            .slice(0, 10);
+
+          if (!topVideos.length) return null;
+
+          const chAnalysis = analysis?.channels?.find(c => c.channelName === ch.name);
+
+          return (
+            <div key={ch.channelId}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${pal.bar}`} />
+                <span className="text-th-tx1 text-sm font-semibold">{ch.name}</span>
+                {ch.isPrimary && (
+                  <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded-full">You</span>
+                )}
+              </div>
+              <div className="grid grid-cols-5 gap-2">
+                {topVideos.map((v, j) => (
+                  <div key={j} className="group relative rounded-lg overflow-hidden aspect-video bg-th-raised border border-th-border">
+                    <img
+                      src={v.thumbnail}
+                      alt={v.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
+                      <p className="text-white text-[10px] leading-tight line-clamp-2">{v.title}</p>
+                      <p className={`text-[10px] font-semibold tabular-nums mt-1 ${pal.text}`}>{fmt(v.viewCount)} views</p>
+                    </div>
+                    <div className={`absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded ${pal.light}`}>
+                      #{j + 1}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {chAnalysis && (
+                <div className="mt-3 bg-th-surface border border-th-border rounded-xl p-4">
+                  <p className="text-th-tx2 text-xs leading-relaxed mb-3">{chAnalysis.summary}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      ['Colours', chAnalysis.patterns?.colours],
+                      ['Faces', chAnalysis.patterns?.faces],
+                      ['Text', chAnalysis.patterns?.text],
+                      ['Composition', chAnalysis.patterns?.composition],
+                    ].filter(([, v]) => v).map(([label, val]) => (
+                      <div key={label} className="bg-th-raised rounded-lg px-3 py-2">
+                        <p className="text-th-tx4 text-[10px] font-medium uppercase tracking-wider mb-0.5">{label}</p>
+                        <p className="text-th-tx2 text-xs leading-snug">{val}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Analyse button */}
+      <div className="mt-6 flex items-center gap-3">
+        <button
+          onClick={handleAnalyse}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-th-accent hover:bg-th-accentH disabled:opacity-40 disabled:cursor-not-allowed text-th-accentFg text-sm transition-colors"
+        >
+          {loading
+            ? <><Loader2 size={14} className="animate-spin" />Analysing thumbnails…</>
+            : <><Sparkles size={14} />{analysis ? 'Re-analyse' : 'Analyse thumbnail patterns'}</>}
+        </button>
+        {loading && <p className="text-th-tx4 text-xs">Fetching images and running vision analysis — may take ~20s</p>}
+      </div>
+
+      {error && (
+        <div className="mt-4 flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+          <AlertCircle size={13} className="text-red-400 shrink-0 mt-0.5" />
+          <p className="text-red-300 text-xs">{error}</p>
+        </div>
+      )}
+
+      {/* Cross-channel findings */}
+      {analysis?.crossChannel && (
+        <div className="mt-6 bg-th-accent/10 border border-th-accent/25 rounded-xl p-5">
+          <h3 className="text-th-accent text-sm font-semibold mb-4 flex items-center gap-2">
+            <Sparkles size={13} /> Cross-channel patterns
+          </h3>
+          {analysis.crossChannel.sharedPatterns?.length > 0 && (
+            <div className="mb-4">
+              <p className="text-th-tx3 text-xs font-medium uppercase tracking-wider mb-2">Shared across winners</p>
+              <div className="space-y-1.5">
+                {analysis.crossChannel.sharedPatterns.map((p, i) => (
+                  <div key={i} className="flex items-start gap-2 text-th-tx2 text-xs">
+                    <span className="w-1 h-1 rounded-full bg-th-accent mt-1.5 shrink-0" />
+                    {p}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {analysis.crossChannel.keyDifferences?.length > 0 && (
+            <div className="mb-4">
+              <p className="text-th-tx3 text-xs font-medium uppercase tracking-wider mb-2">Key differences</p>
+              <div className="space-y-1.5">
+                {analysis.crossChannel.keyDifferences.map((d, i) => (
+                  <div key={i} className="flex items-start gap-2 text-th-tx2 text-xs">
+                    <span className="w-1 h-1 rounded-full bg-sky-400 mt-1.5 shrink-0" />
+                    {d}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {analysis.crossChannel.steal && (
+            <div className="border-t border-th-accent/20 pt-4">
+              <p className="text-th-accent text-xs font-medium mb-1.5 flex items-center gap-1.5"><BookOpen size={11} /> What to steal</p>
+              <p className="text-th-tx2 text-xs leading-relaxed">{analysis.crossChannel.steal}</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -937,6 +1102,19 @@ export default function Compare({ episodes, channels = [], onChannelsLoaded }) {
             <OutlierPanel insights={insights} />
           </div>
         )}
+
+        {/* ── Thumbnail patterns ── */}
+        <div className="px-6 pt-8 pb-12 border-t border-th-border">
+          <div className="flex items-center gap-2 mb-1">
+            <Image size={15} className="text-th-accent" />
+            <h2 className="text-th-tx1 font-semibold text-base">Thumbnail patterns</h2>
+          </div>
+          <p className="text-th-tx3 text-xs mb-6">
+            Top 10 videos by views per channel. Hit "Analyse" to get an AI breakdown of what visual patterns are working.
+          </p>
+          <ThumbnailGrid channelStats={channelStats} />
+        </div>
+
       </div>
     </div>
   );

@@ -69,7 +69,7 @@ const SECTIONS = [
         description: 'Ask questions across your entire episode catalogue using AI.',
         bullets: [
           'Natural language search — ask anything about your content',
-          'Claude reads summaries and topics from all analysed episodes',
+          'AI reads summaries and topics from all analysed episodes',
           'Returns ranked results with relevant quotes and context',
           'Great for finding "did I cover X?", "which episodes mention Y?" and similar queries',
           'Works best after episodes have been transcribed and analysed',
@@ -99,7 +99,7 @@ const SECTIONS = [
         description: 'Deep AI analysis of individual episodes — dimensions, hooks, sentiment and more.',
         bullets: [
           'Select any analysed episode to see its full intelligence breakdown',
-          'Dimensions — Claude extracts every content angle from the transcript automatically',
+          'Dimensions — AI extracts every content angle from the transcript automatically',
           'Hook type, sentiment, key topics, and a full summary',
           'Defaults to your primary channel automatically',
           'Episodes without transcripts show a prompt to transcribe first',
@@ -133,7 +133,7 @@ const SECTIONS = [
         iconBg: 'bg-pink-500',
         description: 'AI-generated episode ideas based on your existing content and gaps.',
         bullets: [
-          'Claude analyses your back catalogue and suggests new episode angles',
+          'AI analyses your back catalogue and suggests new episode angles',
           'Ideas are scored and explained — why this topic, why now',
           'Click any idea to send it straight to the Script Writer',
           'Regenerate at any time to get a fresh set of ideas',
@@ -148,7 +148,7 @@ const SECTIONS = [
         description: 'AI script writing assistant for your next episode.',
         bullets: [
           'Start from scratch with a brief or send an idea directly from the Ideas page',
-          'Claude drafts a full episode structure — intro, segments, outro',
+          'AI drafts a full episode structure — intro, segments, outro',
           'Streams the script in real time so you can read as it writes',
           'Edit the brief and regenerate sections as needed',
           'Scripts are saved and accessible from this page',

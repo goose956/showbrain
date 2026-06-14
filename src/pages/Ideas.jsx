@@ -170,7 +170,7 @@ export default function Ideas({ episodes, channels = [], onWriteScript }) {
               Episode Ideas
             </h1>
             <p className="text-th-tx3 text-xs mt-0.5">
-              Claude analyses your channel patterns and suggests what to make next — and why it'll perform.
+              AI analyses your channel patterns and suggests what to make next — and why it'll perform.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -216,7 +216,7 @@ export default function Ideas({ episodes, channels = [], onWriteScript }) {
         {!hasEnoughData && (
           <div className="mt-3 flex items-start gap-2 text-amber-400 text-xs bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
             <AlertCircle size={13} className="shrink-0 mt-0.5" />
-            Analyse at least 3 episodes on the Intelligence page first — Claude needs dimension data to make good recommendations.
+            Analyse at least 3 episodes on the Intelligence page first — the AI needs dimension data to make good recommendations.
           </div>
         )}
       </div>
@@ -239,7 +239,7 @@ export default function Ideas({ episodes, channels = [], onWriteScript }) {
             <Lightbulb size={32} className="text-th-raised mb-3" />
             <p className="text-th-tx3 text-sm mb-1">No ideas generated yet</p>
             <p className="text-th-tx4 text-xs max-w-xs">
-              Hit Generate Ideas and Claude will analyse your channel's performance patterns to suggest your next 9 episodes.
+              Hit Generate Ideas and the AI will analyse your channel's performance patterns to suggest your next 9 episodes.
             </p>
           </div>
         )}

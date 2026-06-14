@@ -772,4 +772,100 @@ Return JSON only, no markdown:
   }
 });
 
+// ── Thumbnail pattern analysis ────────────────────────────────────────────────
+// POST /api/ai/thumbnail-analysis
+// body: { channels: [{ channelId, channelName, videos: [{ title, thumbnail, viewCount }] }] }
+router.post('/thumbnail-analysis', async (req, res) => {
+  const { channels } = req.body;
+  if (!channels?.length) return res.status(400).json({ error: 'channels required' });
+
+  try {
+    // Fetch thumbnails as base64 server-side (avoid browser CORS on image fetches)
+    const channelsWithImages = await Promise.all(
+      channels.map(async (ch) => {
+        const videos = await Promise.all(
+          (ch.videos || []).slice(0, 10).map(async (v) => {
+            if (!v.thumbnail) return { ...v, imageData: null };
+            try {
+              const r = await fetch(v.thumbnail);
+              if (!r.ok) return { ...v, imageData: null };
+              const buf = await r.arrayBuffer();
+              const b64 = Buffer.from(buf).toString('base64');
+              const ct = r.headers.get('content-type') || 'image/jpeg';
+              return { ...v, imageData: { b64, ct } };
+            } catch {
+              return { ...v, imageData: null };
+            }
+          })
+        );
+        return { ...ch, videos };
+      })
+    );
+
+    // Build message content: one block per channel
+    const content = [];
+    for (const ch of channelsWithImages) {
+      content.push({ type: 'text', text: `\n\n## Channel: ${ch.channelName}\nTop videos by view count:` });
+      for (const v of ch.videos) {
+        content.push({ type: 'text', text: `• "${v.title}" — ${(v.viewCount || 0).toLocaleString()} views` });
+        if (v.imageData) {
+          content.push({
+            type: 'image',
+            source: { type: 'base64', media_type: v.imageData.ct, data: v.imageData.b64 },
+          });
+        }
+      }
+    }
+
+    content.push({
+      type: 'text',
+      text: `
+Analyse the thumbnails above for each channel. Look for visual patterns in the top-performing videos.
+
+For each channel, identify:
+- Colour palette / dominant colours
+- Whether faces appear (and expression/style)
+- Text on thumbnail — how much, style, capitalisation
+- Composition style (clean vs busy, dark vs bright)
+- Any recurring visual motif or template
+
+Then give a cross-channel comparison: what patterns are shared across winning thumbnails? What does each channel do differently?
+
+Return JSON only:
+{
+  "channels": [
+    {
+      "channelName": "...",
+      "patterns": {
+        "colours": "...",
+        "faces": "...",
+        "text": "...",
+        "composition": "...",
+        "motif": "..."
+      },
+      "summary": "2-3 sentence pattern summary for this channel"
+    }
+  ],
+  "crossChannel": {
+    "sharedPatterns": ["pattern 1", "pattern 2"],
+    "keyDifferences": ["difference 1", "difference 2"],
+    "steal": "What to steal for your own thumbnails based on what's working across the niche"
+  }
+}`,
+    });
+
+    const client = await getClient();
+    const result = await client.messages.create({
+      model: 'claude-opus-4-8',
+      max_tokens: 2048,
+      messages: [{ role: 'user', content }],
+    });
+
+    res.json(parseJson(result.content[0].text));
+  } catch (err) {
+    console.error('[thumbnail-analysis]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

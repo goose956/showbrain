@@ -509,7 +509,7 @@ export default function Intelligence({ episodes, channels: channelsProp = [], on
                   Tactical Recommendations
                 </h2>
                 <p className="text-th-tx3 text-xs mt-0.5">
-                  Claude analyses your patterns and tells you exactly what to do next.
+                  AI analyses your patterns and tells you exactly what to do next.
                 </p>
               </div>
               <button
@@ -552,7 +552,7 @@ export default function Intelligence({ episodes, channels: channelsProp = [], on
             {!insights && !generatingInsights && (
               <div className="bg-th-surface/50 border border-th-border rounded-xl p-6 text-center">
                 <Sparkles size={20} className="text-th-tx4 mx-auto mb-2" />
-                <p className="text-th-tx3 text-sm">Click Generate Insights to get Claude's tactical recommendations based on your {episodesWithDims.length} analysed episodes.</p>
+                <p className="text-th-tx3 text-sm">Click Generate Insights to get AI tactical recommendations based on your {episodesWithDims.length} analysed episodes.</p>
               </div>
             )}
           </div>

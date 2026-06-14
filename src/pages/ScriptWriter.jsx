@@ -492,7 +492,7 @@ export default function ScriptWriter({ episodes, initialBrief = null }) {
               {stage === 'analysing' ? 'Analysing your episode history…' : 'Writing your script…'}
             </p>
             <p className="text-th-tx3 text-xs mt-1">
-              {stage === 'analysing' ? 'Finding patterns in your best-performing content' : 'Claude is learning your voice from past episodes'}
+              {stage === 'analysing' ? 'Finding patterns in your best-performing content' : 'AI is learning your voice from past episodes'}
             </p>
           </div>
         </div>

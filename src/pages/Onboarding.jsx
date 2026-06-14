@@ -92,12 +92,12 @@ export default function Onboarding({ onEpisodeAdded }) {
       <div className="flex flex-col items-center justify-center h-full py-32 text-center">
         <Loader2 size={36} className="text-th-accent animate-spin mb-4" />
         <h2 className="text-th-tx1 text-lg font-medium mb-2">
-          {status === 'transcribing' ? 'Transcribing audio…' : 'Analysing with Claude…'}
+          {status === 'transcribing' ? 'Transcribing audio…' : 'Analysing with AI…'}
         </h2>
         <p className="text-th-tx3 text-sm max-w-xs">
           {status === 'transcribing'
             ? 'Deepgram is converting your audio to text. This may take a moment.'
-            : 'Claude is extracting topics, sentiment, and generating your summary.'}
+            : 'AI is extracting topics, sentiment, and generating your summary.'}
         </p>
       </div>
     );
