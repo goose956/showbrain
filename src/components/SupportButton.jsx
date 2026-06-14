@@ -18,6 +18,8 @@ const STATUS_COLOR = {
   closed:  'text-th-tx4 bg-th-raised border-th-border',
 };
 
+const SEEN_KEY = (u) => `showbrain_support_seen_${u}`;
+
 export default function SupportButton({ currentUser }) {
   const [open, setOpen]           = useState(false);
   const [view, setView]           = useState('list'); // list | new | thread
@@ -29,13 +31,26 @@ export default function SupportButton({ currentUser }) {
   const [subject, setSubject]     = useState('');
   const [message, setMessage]     = useState('');
   const [reply, setReply]         = useState('');
+  const [hasUnread, setHasUnread] = useState(false);
   const bottomRef = useRef(null);
+
+  const checkUnread = (ticketList) => {
+    const seen = localStorage.getItem(SEEN_KEY(currentUser));
+    const seenTime = seen ? new Date(seen) : null;
+    const unread = ticketList.some(t => {
+      if (!seenTime) return Number(t.message_count) > 1;
+      return new Date(t.updated_at) > seenTime;
+    });
+    setHasUnread(unread);
+  };
 
   const loadTickets = async () => {
     setLoading(true);
     try {
       const res = await apiFetch('/api/support');
-      setTickets(await res.json());
+      const data = await res.json();
+      setTickets(data);
+      if (!open) checkUnread(data);
     } catch { /* silent */ }
     finally { setLoading(false); }
   };
@@ -50,7 +65,33 @@ export default function SupportButton({ currentUser }) {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { if (open) loadTickets(); }, [open]);
+  // Mark all as seen when panel opens
+  useEffect(() => {
+    if (open) {
+      loadTickets();
+      localStorage.setItem(SEEN_KEY(currentUser), new Date().toISOString());
+      setHasUnread(false);
+    }
+  }, [open]);
+
+  // Poll for new messages every 60s while panel is closed
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!open) {
+        apiFetch('/api/support').then(r => r.json()).then(data => {
+          setTickets(data);
+          checkUnread(data);
+        }).catch(() => {});
+      }
+    }, 60000);
+    // Also check once on mount
+    apiFetch('/api/support').then(r => r.json()).then(data => {
+      setTickets(data);
+      checkUnread(data);
+    }).catch(() => {});
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [activeTicket]);
 
   const submitNew = async (e) => {
@@ -98,7 +139,12 @@ export default function SupportButton({ currentUser }) {
           open ? 'bg-th-surface border-2 border-th-accent text-th-accent' : 'bg-th-accent hover:bg-th-accentH text-th-accentFg'
         }`}
       >
-        {open ? <X size={15} /> : <MessageCircle size={15} />}
+        <span className="relative">
+          {open ? <X size={15} /> : <MessageCircle size={15} />}
+          {hasUnread && !open && (
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 border border-th-accentFg" />
+          )}
+        </span>
         {!open && <span>Get support</span>}
       </button>
 
