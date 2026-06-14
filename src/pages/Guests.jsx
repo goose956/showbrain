@@ -6,6 +6,39 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 
+function DeleteModal({ name, onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative bg-th-surface border border-th-border rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-9 h-9 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+            <Trash2 size={16} className="text-red-400" />
+          </div>
+          <h2 className="text-th-tx1 font-semibold text-base">Delete guest</h2>
+        </div>
+        <p className="text-th-tx2 text-sm mb-5">
+          Are you sure you want to delete <span className="font-medium text-th-tx1">{name}</span>? This will remove their bio, questions, and outreach draft permanently.
+        </p>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded-lg border border-th-border text-th-tx2 hover:text-th-tx1 text-sm transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const STATUSES = [
   { id: 'research',  label: 'Research',  color: 'bg-violet-500', light: 'bg-violet-500/10 border-violet-500/25 text-violet-300' },
   { id: 'outreach',  label: 'Outreach',  color: 'bg-amber-500',  light: 'bg-amber-500/10 border-amber-500/25 text-amber-300' },
@@ -87,9 +120,17 @@ function AddGuestForm({ onAdded, onCancel }) {
 // ── Guest card ─────────────────────────────────────────────────────────────────
 
 function GuestCard({ guest, active, onClick, onDelete }) {
+  const [confirming, setConfirming] = useState(false);
   const st = statusMeta(guest.status);
   return (
     <div className={`rounded-xl border transition-all ${active ? 'border-th-accent bg-th-accent/5' : 'border-th-border bg-th-surface hover:border-th-border/60 hover:bg-th-raised/30'}`}>
+      {confirming && (
+        <DeleteModal
+          name={guest.name}
+          onConfirm={() => { setConfirming(false); onDelete(guest.id); }}
+          onCancel={() => setConfirming(false)}
+        />
+      )}
       <button onClick={onClick} className="w-full text-left p-3.5">
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <p className="text-th-tx1 text-xs font-semibold leading-snug">{guest.name}</p>
@@ -120,7 +161,7 @@ function GuestCard({ guest, active, onClick, onDelete }) {
       </button>
       <div className="flex justify-end px-3 pb-2">
         <button
-          onClick={e => { e.stopPropagation(); if (confirm(`Delete ${guest.name}?`)) onDelete(guest.id); }}
+          onClick={e => { e.stopPropagation(); setConfirming(true); }}
           className="flex items-center gap-1 text-[11px] text-th-tx4 hover:text-red-400 transition-colors"
         >
           <Trash2 size={11} /> Delete
@@ -156,6 +197,7 @@ function GuestPanel({ guest, channels, episodes, onUpdate, onDelete, onClose }) 
   const [editNotes, setEditNotes] = useState(guest.notes || '');
   const [editEmail, setEditEmail] = useState(guest.email || '');
   const [savingMeta, setSavingMeta] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   // Keep local state in sync when guest prop changes
   useEffect(() => {
@@ -216,6 +258,13 @@ function GuestPanel({ guest, channels, episodes, onUpdate, onDelete, onClose }) 
 
   return (
     <div className="flex flex-col h-full border-l border-th-border bg-th-surface">
+      {confirming && (
+        <DeleteModal
+          name={guest.name}
+          onConfirm={() => { setConfirming(false); onDelete(guest.id); }}
+          onCancel={() => setConfirming(false)}
+        />
+      )}
 
       {/* Header */}
       <div className="px-5 py-4 border-b border-th-border shrink-0">
@@ -230,7 +279,7 @@ function GuestPanel({ guest, channels, episodes, onUpdate, onDelete, onClose }) 
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => { if (confirm(`Delete ${guest.name}?`)) onDelete(guest.id); }}
+              onClick={() => setConfirming(true)}
               className="p-1.5 text-th-tx4 hover:text-red-400 transition-colors"
             >
               <Trash2 size={13} />
