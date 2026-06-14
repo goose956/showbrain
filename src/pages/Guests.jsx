@@ -86,15 +86,11 @@ function AddGuestForm({ onAdded, onCancel }) {
 
 // ── Guest card ─────────────────────────────────────────────────────────────────
 
-function GuestCard({ guest, active, onClick }) {
+function GuestCard({ guest, active, onClick, onDelete }) {
   const st = statusMeta(guest.status);
   return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left rounded-xl border p-3.5 transition-all ${
-        active ? 'border-th-accent bg-th-accent/5' : 'border-th-border bg-th-surface hover:border-th-border/60 hover:bg-th-raised/30'
-      }`}
-    >
+    <div className={`rounded-xl border transition-all ${active ? 'border-th-accent bg-th-accent/5' : 'border-th-border bg-th-surface hover:border-th-border/60 hover:bg-th-raised/30'}`}>
+      <button onClick={onClick} className="w-full text-left p-3.5">
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <p className="text-th-tx1 text-xs font-semibold leading-snug">{guest.name}</p>
         <ChevronRight size={12} className="text-th-tx4 shrink-0 mt-0.5" />
@@ -121,7 +117,16 @@ function GuestCard({ guest, active, onClick }) {
           <span className="text-[10px] text-emerald-400 flex items-center gap-0.5"><Mail size={9} /> draft ready</span>
         )}
       </div>
-    </button>
+      </button>
+      <div className="flex justify-end px-3 pb-2">
+        <button
+          onClick={e => { e.stopPropagation(); if (confirm(`Delete ${guest.name}?`)) onDelete(guest.id); }}
+          className="flex items-center gap-1 text-[11px] text-th-tx4 hover:text-red-400 transition-colors"
+        >
+          <Trash2 size={11} /> Delete
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -634,6 +639,7 @@ export default function Guests({ channels, episodes }) {
               guest={g}
               active={g.id === activeId}
               onClick={() => { setActiveId(g.id); setShowAdd(false); }}
+              onDelete={handleDelete}
             />
           ))}
         </div>
